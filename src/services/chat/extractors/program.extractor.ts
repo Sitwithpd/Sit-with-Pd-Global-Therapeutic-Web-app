@@ -14,6 +14,7 @@ function buildProgramOverviewText(program: {
   description: string;
   category: string;
   price: number;
+  currency: string;
   durationWeeks: number | null;
   hoursPerWeek: number | null;
   certificateLabel: string | null;
@@ -24,7 +25,7 @@ function buildProgramOverviewText(program: {
   const lines = [
     `Program: ${program.title}`,
     `Category: ${program.category}`,
-    `Price: ${program.price}`,
+    `Price: ${program.price} ${program.currency}`,
     program.durationWeeks != null ? `Duration: ${program.durationWeeks} weeks` : null,
     program.hoursPerWeek != null ? `Hours per week: ${program.hoursPerWeek}` : null,
     program.certificateLabel ? `Certificate: ${program.certificateLabel}` : null,

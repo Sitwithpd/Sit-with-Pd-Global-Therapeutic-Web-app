@@ -59,10 +59,7 @@ export async function createConsultationPaymentAndEmail(
   const user = consultation.user;
   const amount = consultation.service.price;
   const provider = resolveProvider(options.provider);
-  const currency =
-    options.currency?.trim().toUpperCase() ||
-    process.env.PAYMENT_DEFAULT_CURRENCY?.trim().toUpperCase() ||
-    'NGN';
+  const currency = consultation.service.currency;
 
   let authorizationUrl: string;
   let reference: string;

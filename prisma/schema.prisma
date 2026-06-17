@@ -154,11 +154,12 @@ enum ProgramCategory {
 }
 
 model Program {
-  id               String          @id @default(cuid())
+  id               String           @id @default(cuid())
   title            String
   description      String
   price            Float
-  category         ProgramCategory @default(LEADERS)
+  currency         PlatformCurrency @default(NGN)
+  category         ProgramCategory  @default(LEADERS)
   thumbnail        String?
   isPublished      Boolean         @default(false)
   durationWeeks    Int?
@@ -258,7 +259,7 @@ model Camp {
   location    String
   // Legacy column; unused for new camps. Pricing is defined only on CampTier — APIs omit this field from camp payloads.
   price       Float?
-  currency    String     @default("USD")
+  currency    PlatformCurrency @default(USD)
   capacity    Int // Total seats across all tiers (sum of registration.participantCount must not exceed this)
   startDate   DateTime
   endDate     DateTime
@@ -397,10 +398,11 @@ model CampRegistration {
 }
 
 model ConsultationService {
-  id             String   @id @default(cuid())
+  id             String           @id @default(cuid())
   title          String
   description    String
   price          Float
+  currency       PlatformCurrency @default(NGN)
   duration       Int
   calEventTypeId Int?
   calBookingUrl  String?

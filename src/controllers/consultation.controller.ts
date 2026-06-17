@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { ConsultationStatus, Prisma } from '@prisma/client';
 import prisma from '../config/prisma';
 import { buildMeta, parseAdminPagination } from '../lib/pagination';
+import { parsePlatformCurrency } from '../lib/parsePlatformCurrency';
 import { catchAsync, AppError } from '../middleware/error.middleware';
 import { AuthRequest } from '../types';
 import {
@@ -191,7 +192,7 @@ export const updateConsultation = catchAsync(async (req: Request, res: Response)
 
 // POST /api/admin/consultations/services — Create a new service
 export const createService = catchAsync(async (req: Request, res: Response) => {
-  const { title, description, price, duration, calEventTypeId } = req.body;
+  const { title, description, price, currency, duration, calEventTypeId } = req.body;
 
   let parsedCal: number | undefined;
   if (calEventTypeId != null && calEventTypeId !== '') {
@@ -201,6 +202,8 @@ export const createService = catchAsync(async (req: Request, res: Response) => {
 
   await assertCalEventTypeIdAvailable(parsedCal);
 
+  const parsedCurrency = parsePlatformCurrency(currency);
+
   const createData: {
     title: string;
     description: string;
@@ -208,12 +211,14 @@ export const createService = catchAsync(async (req: Request, res: Response) => {
     duration: number;
     calEventTypeId?: number;
     calBookingUrl?: string | null;
+    currency?: ReturnType<typeof parsePlatformCurrency>;
   } = {
     title,
     description,
     price: parseFloat(price),
     duration: parseInt(duration, 10),
     ...(parsedCal !== undefined && { calEventTypeId: parsedCal }),
+    ...(parsedCurrency !== undefined && { currency: parsedCurrency }),
   };
 
   if ('calBookingUrl' in req.body) {
@@ -238,7 +243,7 @@ export const createService = catchAsync(async (req: Request, res: Response) => {
 
 // PATCH /api/admin/consultations/services/:id — Edit a service
 export const updateService = catchAsync(async (req: Request, res: Response) => {
-  const { title, description, price, duration, isActive, calEventTypeId } = req.body;
+  const { title, description, price, currency, duration, isActive, calEventTypeId } = req.body;
 
   let nextCal: number | null | undefined;
   if (calEventTypeId !== undefined) {
@@ -268,6 +273,9 @@ export const updateService = catchAsync(async (req: Request, res: Response) => {
         ...(title && { title }),
         ...(description && { description }),
         ...(price != null && { price: parseFloat(price) }),
+        ...(currency !== undefined && currency !== '' && {
+          currency: parsePlatformCurrency(currency, true),
+        }),
         ...(duration != null && { duration: parseInt(duration, 10) }),
         ...(isActive !== undefined && { isActive }),
         ...(calEventTypeId !== undefined && { calEventTypeId: nextCal as number | null }),

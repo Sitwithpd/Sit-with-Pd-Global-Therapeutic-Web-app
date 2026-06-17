@@ -70,7 +70,7 @@ export const initializePayment = catchAsync(async (req: AuthRequest, res: Respon
   const userId = req.user!.id;
   const { type, itemId } = req.body;
   const provider = parseProvider(req.body?.provider);
-  const currency = parseCurrency(req.body?.currency);
+  let currency = parseCurrency(req.body?.currency);
 
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) throw new AppError('User not found.', 404);
@@ -90,6 +90,10 @@ export const initializePayment = catchAsync(async (req: AuthRequest, res: Respon
     if (existing) throw new AppError('You already own this program.', 400);
 
     amount = program.price;
+    // The program's stored currency is authoritative for its price. Ignore any
+    // currency on the request so a Naira-priced program can never be charged as
+    // USD (which previously produced amounts far above provider limits).
+    currency = program.currency;
     description = `Purchase: ${program.title}`;
 
   } else if (type === 'CAMP') {
@@ -139,6 +143,8 @@ export const initializePayment = catchAsync(async (req: AuthRequest, res: Respon
     }
 
     amount = registration.tier.price;
+    // Camp tier prices are denominated in the camp's stored currency.
+    currency = registration.camp.currency;
     description = `Camp Application: ${registration.camp.title} — ${registration.tier.label}`;
 
   } else if (type === 'CONSULTATION') {
@@ -150,6 +156,8 @@ export const initializePayment = catchAsync(async (req: AuthRequest, res: Respon
     if (consultation.userId !== userId) throw new AppError('Unauthorized.', 403);
 
     amount = consultation.service.price;
+    // Service price is denominated in the consultation service's stored currency.
+    currency = consultation.service.currency;
     description = `Consultation: ${consultation.service.title}`;
   }
 

@@ -3,6 +3,7 @@ import { Prisma, CampStatus, CampRegistrationStatus } from '@prisma/client';
 import prisma from '../config/prisma';
 import { stripLegacyCampPrice } from '../lib/campSerialization';
 import { mapForeignKeyDeleteError } from '../lib/prismaDeleteErrors';
+import { parsePlatformCurrency } from '../lib/parsePlatformCurrency';
 import { buildMeta, parseAdminPagination } from '../lib/pagination';
 import { catchAsync, AppError } from '../middleware/error.middleware';
 import { AuthRequest, ApplicantDetails } from '../types';
@@ -418,6 +419,7 @@ export const createCamp = catchAsync(async (req: AuthRequest, res: Response) => 
   const thumbnail = (req.file as Express.Multer.File & { path: string })?.path;
 
   const parsedBenefits = parseStringArray(benefits);
+  const parsedCurrency = parsePlatformCurrency(currency);
 
   const camp = await prisma.camp.create({
     data: {
@@ -427,7 +429,7 @@ export const createCamp = catchAsync(async (req: AuthRequest, res: Response) => 
       capacity: parseInt(capacity),
       startDate: new Date(startDate),
       endDate: new Date(endDate),
-      ...(currency && { currency }),
+      ...(parsedCurrency !== undefined && { currency: parsedCurrency }),
       benefits: parsedBenefits,
       thumbnail,
     },
@@ -466,7 +468,9 @@ export const updateCamp = catchAsync(async (req: AuthRequest, res: Response) => 
       ...(startDate && { startDate: new Date(startDate) }),
       ...(endDate && { endDate: new Date(endDate) }),
       ...(status && { status }),
-      ...(currency && { currency }),
+      ...(currency !== undefined && currency !== '' && {
+        currency: parsePlatformCurrency(currency, true),
+      }),
       ...(benefits !== undefined && { benefits: parseStringArray(benefits) }),
       ...(thumbnail && { thumbnail }),
     },

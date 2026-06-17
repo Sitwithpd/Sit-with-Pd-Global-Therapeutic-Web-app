@@ -13,7 +13,7 @@ export async function extractConsultationChunks(serviceId: string): Promise<Know
   const text = [
     `Consultation service: ${service.title}`,
     `Duration: ${service.duration} minutes`,
-    `Price: ${service.price}`,
+    `Price: ${service.price} ${service.currency}`,
     '',
     service.description,
     service.calBookingUrl ? `\nBook online: ${service.calBookingUrl}` : '',

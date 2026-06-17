@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { ModuleType, ProgramCategory, Prisma } from '@prisma/client';
 import prisma from '../config/prisma';
 import { mapForeignKeyDeleteError } from '../lib/prismaDeleteErrors';
+import { parsePlatformCurrency } from '../lib/parsePlatformCurrency';
 import { buildMeta, parseAdminPagination } from '../lib/pagination';
 import { catchAsync, AppError } from '../middleware/error.middleware';
 import { AuthRequest } from '../types';
@@ -174,6 +175,7 @@ export const getAllPrograms = catchAsync(async (req: Request, res: Response) => 
       description: true,
       category: true,
       price: true,
+      currency: true,
       thumbnail: true,
       durationWeeks: true,
       hoursPerWeek: true,
@@ -308,6 +310,7 @@ export const createProgram = catchAsync(async (req: Request, res: Response) => {
     title,
     description,
     price,
+    currency,
     category,
     durationWeeks,
     hoursPerWeek,
@@ -328,6 +331,7 @@ export const createProgram = catchAsync(async (req: Request, res: Response) => {
     req.body.learningOutcomes ?? req.body.learning_outcomes
   );
   const parsedCategory = parseCategory(category) ?? ProgramCategory.LEADERS;
+  const parsedCurrency = parsePlatformCurrency(currency);
 
   // Parse optional nested weeks payload for single-shot creation
   type ModuleInput = {
@@ -361,6 +365,7 @@ export const createProgram = catchAsync(async (req: Request, res: Response) => {
       title,
       description,
       price: parseFloat(String(price)),
+      ...(parsedCurrency !== undefined && { currency: parsedCurrency }),
       category: parsedCategory,
       thumbnail,
       learningOutcomes,
@@ -431,6 +436,7 @@ export const updateProgram = catchAsync(async (req: Request, res: Response) => {
     title,
     description,
     price,
+    currency,
     isPublished,
     category,
     durationWeeks,
@@ -450,6 +456,9 @@ export const updateProgram = catchAsync(async (req: Request, res: Response) => {
     ...(title && { title }),
     ...(description && { description }),
     ...(price !== undefined && { price: parseFloat(String(price)) }),
+    ...(currency !== undefined && currency !== '' && {
+      currency: parsePlatformCurrency(currency, true),
+    }),
     ...(isPublished !== undefined && {
       isPublished: isPublished === true || isPublished === 'true',
     }),
