@@ -22,6 +22,7 @@ export async function extractCampChunks(campId: string): Promise<KnowledgeDocume
   const overview = [
     `Camp: ${camp.title}`,
     `Status: ${camp.status}`,
+    camp.category ? `Category: ${camp.category}` : '',
     `Location: ${camp.location}`,
     `Dates: ${camp.startDate.toISOString().slice(0, 10)} to ${camp.endDate.toISOString().slice(0, 10)}`,
     `Currency: ${camp.currency}`,

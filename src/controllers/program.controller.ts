@@ -6,6 +6,8 @@ import { parsePlatformCurrency } from '../lib/parsePlatformCurrency';
 import { buildMeta, parseAdminPagination } from '../lib/pagination';
 import { catchAsync, AppError } from '../middleware/error.middleware';
 import { AuthRequest } from '../types';
+import { tagJoinInclude, withSerializedTags } from '../lib/serializeTags';
+import { syncProgramTags } from '../services/tag.service';
 import {
   scheduleChatDeleteProgram,
   scheduleChatReindexProgram,
@@ -75,12 +77,12 @@ function resolveProgramStartDatePatch(raw: unknown): { apply: boolean; value?: D
  * Accepts an array, a JSON string of an array, newline- or semicolon-separated
  * text, or a single string — and always returns a plain string[].
  */
-function parseStringArray(raw: unknown): string[] {
+function parseStringArray(raw: unknown, field = 'learningOutcomes / learningObjectives'): string[] {
   if (raw === undefined || raw === null) return [];
-  if (Buffer.isBuffer(raw)) return parseStringArray(raw.toString('utf8'));
+  if (Buffer.isBuffer(raw)) return parseStringArray(raw.toString('utf8'), field);
   if (Array.isArray(raw)) {
     if (raw.length === 1 && typeof raw[0] === 'string' && raw[0].trim().startsWith('[')) {
-      return parseStringArray(raw[0].trim());
+      return parseStringArray(raw[0].trim(), field);
     }
     return raw.map((x) => String(x).trim()).filter(Boolean);
   }
@@ -93,7 +95,7 @@ function parseStringArray(raw: unknown): string[] {
       );
       if (Array.isArray(parsed)) return parsed.map((x) => String(x).trim()).filter(Boolean);
     } catch {
-      throw new AppError('learningOutcomes / learningObjectives must be a valid JSON array.', 400);
+      throw new AppError(`${field} must be a valid JSON array.`, 400);
     }
   }
   const lines = str.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
@@ -181,10 +183,12 @@ export const getAllPrograms = catchAsync(async (req: Request, res: Response) => 
       hoursPerWeek: true,
       certificateLabel: true,
       learningOutcomes: true,
+      audience: true,
       isPublished: true,
       startDate: true,
       facilitatorName: true,
       createdAt: true,
+      tags: tagJoinInclude,
       _count: {
         select: {
           purchases: true, // "Enrolled" count shown in the table
@@ -195,7 +199,11 @@ export const getAllPrograms = catchAsync(async (req: Request, res: Response) => 
     orderBy: { createdAt: 'desc' },
   });
 
-  res.json({ success: true, message: 'Programs retrieved.', data: programs });
+  res.json({
+    success: true,
+    message: 'Programs retrieved.',
+    data: programs.map(withSerializedTags),
+  });
 });
 
 /**
@@ -209,6 +217,7 @@ export const getProgramById = catchAsync(async (req: Request, res: Response) => 
   const program = await prisma.program.findUnique({
     where: { id, isPublished: true },
     include: {
+      tags: tagJoinInclude,
       weeks: {
         orderBy: { order: 'asc' },
         include: {
@@ -232,7 +241,7 @@ export const getProgramById = catchAsync(async (req: Request, res: Response) => 
 
   if (!program) throw new AppError('Program not found.', 404);
 
-  res.json({ success: true, message: 'Program retrieved.', data: program });
+  res.json({ success: true, message: 'Program retrieved.', data: withSerializedTags(program) });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -270,6 +279,7 @@ export const adminGetAllPrograms = catchAsync(async (req: AuthRequest, res: Resp
     prisma.program.findMany({
       where,
       include: {
+        tags: tagJoinInclude,
         _count: {
           select: {
             purchases: true, // "Enrolled" column
@@ -287,7 +297,7 @@ export const adminGetAllPrograms = catchAsync(async (req: AuthRequest, res: Resp
   res.json({
     success: true,
     message: 'All programs retrieved.',
-    data: programs,
+    data: programs.map(withSerializedTags),
     meta: buildMeta(total, page, limit),
   });
 });
@@ -330,6 +340,8 @@ export const createProgram = catchAsync(async (req: Request, res: Response) => {
   const learningOutcomes = parseStringArray(
     req.body.learningOutcomes ?? req.body.learning_outcomes
   );
+  // "Who's this for" — full-sentence bullets, same input handling as outcomes.
+  const audience = parseStringArray(req.body.audience, 'audience');
   const parsedCategory = parseCategory(category) ?? ProgramCategory.LEADERS;
   const parsedCurrency = parsePlatformCurrency(currency);
 
@@ -369,6 +381,7 @@ export const createProgram = catchAsync(async (req: Request, res: Response) => {
       category: parsedCategory,
       thumbnail,
       learningOutcomes,
+      audience,
       ...(optionalString(certificateLabel) !== undefined && {
         certificateLabel: optionalString(certificateLabel),
       }),
@@ -421,9 +434,32 @@ export const createProgram = catchAsync(async (req: Request, res: Response) => {
     },
   });
 
+  // Tags live in a join table, so they are attached after the row exists.
+  // Only touched when the caller actually sent the field.
+  if (req.body.tags !== undefined) {
+    await syncProgramTags(program.id, req.body.tags);
+  }
+  const created = await findProgramWithRelations(program.id);
+
   scheduleChatReindexProgram(program.id);
-  res.status(201).json({ success: true, message: 'Program created.', data: program });
+  res.status(201).json({ success: true, message: 'Program created.', data: created });
 });
+
+/** Re-reads a program with the relation shape every mutation response returns. */
+async function findProgramWithRelations(id: string) {
+  const program = await prisma.program.findUnique({
+    where: { id },
+    include: {
+      tags: tagJoinInclude,
+      weeks: {
+        orderBy: { order: 'asc' },
+        include: { modules: { orderBy: { order: 'asc' } } },
+      },
+    },
+  });
+  if (!program) throw new AppError('Program not found.', 404);
+  return withSerializedTags(program);
+}
 
 /**
  * PATCH /api/programs/:id
@@ -485,26 +521,25 @@ export const updateProgram = catchAsync(async (req: Request, res: Response) => {
     ...(loRaw !== undefined && {
       learningOutcomes: { set: parseStringArray(loRaw) },
     }),
+    // Omit to keep; send [] (or '') to clear.
+    ...(req.body.audience !== undefined && {
+      audience: { set: parseStringArray(req.body.audience, 'audience') },
+    }),
   };
 
-  let program;
   try {
-    program = await prisma.program.update({
-      where: { id },
-      data,
-      include: {
-        weeks: {
-          orderBy: { order: 'asc' },
-          include: { modules: { orderBy: { order: 'asc' } } },
-        },
-      },
-    });
+    await prisma.program.update({ where: { id }, data });
   } catch (e) {
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2025') {
       throw new AppError('Program not found.', 404);
     }
     throw e;
   }
+
+  if (req.body.tags !== undefined) {
+    await syncProgramTags(id, req.body.tags);
+  }
+  const program = await findProgramWithRelations(id);
 
   scheduleChatReindexProgram(id);
   res.json({ success: true, message: 'Program updated.', data: program });

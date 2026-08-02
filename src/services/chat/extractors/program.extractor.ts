@@ -19,12 +19,15 @@ function buildProgramOverviewText(program: {
   hoursPerWeek: number | null;
   certificateLabel: string | null;
   learningOutcomes: string[];
+  audience: string[];
+  topics: string[];
   facilitatorName: string | null;
   startDate: Date | null;
 }): string {
   const lines = [
     `Program: ${program.title}`,
     `Category: ${program.category}`,
+    program.topics.length > 0 ? `Topics: ${program.topics.join(', ')}` : null,
     `Price: ${program.price} ${program.currency}`,
     program.durationWeeks != null ? `Duration: ${program.durationWeeks} weeks` : null,
     program.hoursPerWeek != null ? `Hours per week: ${program.hoursPerWeek}` : null,
@@ -34,6 +37,7 @@ function buildProgramOverviewText(program: {
     '',
     program.description,
     '',
+    formatList("Who this is for", program.audience),
     formatList('Learning outcomes', program.learningOutcomes),
   ];
   return lines.filter((l) => l !== null && l !== '').join('\n');
@@ -43,6 +47,7 @@ export async function extractProgramChunks(programId: string): Promise<Knowledge
   const program = await prisma.program.findFirst({
     where: { id: programId, isPublished: true },
     include: {
+      tags: { include: { tag: true }, orderBy: { order: 'asc' } },
       weeks: {
         orderBy: { order: 'asc' },
         include: {
@@ -71,7 +76,10 @@ export async function extractProgramChunks(programId: string): Promise<Knowledge
       chunkIndex: 0,
       title: program.title,
       path,
-      text: buildProgramOverviewText(program),
+      text: buildProgramOverviewText({
+        ...program,
+        topics: program.tags.map((t) => t.tag?.name).filter((n): n is string => Boolean(n)),
+      }),
     },
   ];
 

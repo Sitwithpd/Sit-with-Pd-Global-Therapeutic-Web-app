@@ -81,6 +81,7 @@ export const getAllCampsAdmin = catchAsync(async (req: Request, res: Response) =
         description: true,
         location: true,
         currency: true,
+        category: true,
         capacity: true,
         startDate: true,
         endDate: true,
@@ -415,17 +416,20 @@ export const getMyCampRegistration = catchAsync(async (req: AuthRequest, res: Re
 
 // POST /api/camps — Create a camp (set prices on tiers after creation)
 export const createCamp = catchAsync(async (req: AuthRequest, res: Response) => {
-  const { title, description, location, capacity, startDate, endDate, currency, benefits } = req.body;
+  const { title, description, location, capacity, startDate, endDate, currency, category, benefits } =
+    req.body;
   const thumbnail = (req.file as Express.Multer.File & { path: string })?.path;
 
   const parsedBenefits = parseStringArray(benefits);
   const parsedCurrency = parsePlatformCurrency(currency);
+  const parsedCategory = parseCampCategory(category, true)!;
 
   const camp = await prisma.camp.create({
     data: {
       title,
       description,
       location,
+      category: parsedCategory,
       capacity: parseInt(capacity),
       startDate: new Date(startDate),
       endDate: new Date(endDate),
@@ -454,9 +458,14 @@ export const updateCamp = catchAsync(async (req: AuthRequest, res: Response) => 
     endDate,
     status,
     currency,
+    category,
     benefits,
   } = req.body;
   const thumbnail = (req.file as Express.Multer.File & { path: string })?.path;
+
+  // Omit to keep the current value; when present it must be a non-empty phrase
+  // (there is no way to clear it back to null via the API).
+  const parsedCategory = category !== undefined ? parseCampCategory(category, true) : undefined;
 
   const camp = await prisma.camp.update({
     where: { id: req.params.id },
@@ -464,6 +473,7 @@ export const updateCamp = catchAsync(async (req: AuthRequest, res: Response) => 
       ...(title && { title }),
       ...(description && { description }),
       ...(location && { location }),
+      ...(parsedCategory !== undefined && { category: parsedCategory }),
       ...(capacity && { capacity: parseInt(capacity) }),
       ...(startDate && { startDate: new Date(startDate) }),
       ...(endDate && { endDate: new Date(endDate) }),
@@ -774,4 +784,23 @@ function parseBoolean(input: unknown): boolean {
   if (typeof input === 'boolean') return input;
   if (typeof input === 'string') return ['true', '1', 'yes', 'on'].includes(input.toLowerCase());
   return false;
+}
+
+export const CAMP_CATEGORY_MAX = 80;
+
+/**
+ * Single free-text phrase, e.g. "Wellness Retreat".
+ * Required by the API on create even though the column is nullable — existing
+ * camps predate the field and are left untouched until an admin edits them.
+ */
+function parseCampCategory(raw: unknown, required: boolean): string | undefined {
+  if (raw === undefined || raw === null || String(raw).trim() === '') {
+    if (required) throw new AppError('category is required.', 400);
+    return undefined;
+  }
+  const s = String(raw).trim();
+  if (s.length > CAMP_CATEGORY_MAX) {
+    throw new AppError(`category must be at most ${CAMP_CATEGORY_MAX} characters.`, 400);
+  }
+  return s;
 }

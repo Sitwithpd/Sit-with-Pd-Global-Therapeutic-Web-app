@@ -11,6 +11,7 @@ import {
 } from '../controllers/consultation.controller';
 import { authenticate, adminOnly } from '../middleware/auth.middleware';
 import { enforceVerifiedEmailIfRequired } from '../middleware/platformSettings.middleware';
+import { uploadImage } from '../middleware/upload.middleware';
 
 const router = Router();
 
@@ -27,7 +28,21 @@ router.post('/book', authenticate, adminOnly, adminManualBookConsultation);
 // ── Admin ─────────────────────────────────────────────────────────────────────
 router.get('/', authenticate, adminOnly, getAllConsultations);
 router.patch('/:id', authenticate, adminOnly, updateConsultation);
-router.post('/services', authenticate, adminOnly, createService);
-router.patch('/services/:id', authenticate, adminOnly, updateService);
+// `coverImage` is an optional file upload. multer also parses multipart text
+// fields; JSON bodies still work and may pass `coverImageUrl` as a string.
+router.post(
+  '/services',
+  authenticate,
+  adminOnly,
+  uploadImage.single('coverImage'),
+  createService
+);
+router.patch(
+  '/services/:id',
+  authenticate,
+  adminOnly,
+  uploadImage.single('coverImage'),
+  updateService
+);
 
 export default router;

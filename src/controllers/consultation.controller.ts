@@ -5,11 +5,83 @@ import { buildMeta, parseAdminPagination } from '../lib/pagination';
 import { parsePlatformCurrency } from '../lib/parsePlatformCurrency';
 import { catchAsync, AppError } from '../middleware/error.middleware';
 import { AuthRequest } from '../types';
+import { serializeFormatTag, tagJoinInclude, withSerializedTags } from '../lib/serializeTags';
+import { resolveFormatTagId, syncConsultationServiceTags } from '../services/tag.service';
 import {
   scheduleChatReindexConsultationService,
 } from '../services/chat/chatReindexHook.service';
 
 const ADMIN_CONSULTATION_SEARCH_MAX_LEN = 100;
+
+/** Relation shape every service response returns. */
+const serviceRelationInclude = {
+  tags: tagJoinInclude,
+  formatTag: true,
+} as const;
+
+type ServiceWithRelations = Prisma.ConsultationServiceGetPayload<{
+  include: typeof serviceRelationInclude;
+}>;
+
+/**
+ * Flattens topic tags and lifts the single FORMAT tag to `format`.
+ * `formatTagId` is kept so admin edit forms can round-trip the value.
+ */
+function serializeService(service: ServiceWithRelations) {
+  const { formatTag, ...rest } = withSerializedTags(service);
+  return { ...rest, format: serializeFormatTag(formatTag) };
+}
+
+async function findServiceForResponse(id: string) {
+  const service = await prisma.consultationService.findUnique({
+    where: { id },
+    include: serviceRelationInclude,
+  });
+  if (!service) throw new AppError('Service not found.', 404);
+  return serializeService(service);
+}
+
+/**
+ * Bullet-list fields ("Who's it for", "What's included"). Accepts an array, a
+ * JSON string, or newline-separated text — multipart forms send any of these.
+ */
+function parseBulletList(raw: unknown, field: string): string[] {
+  if (raw === undefined || raw === null) return [];
+  if (Buffer.isBuffer(raw)) return parseBulletList(raw.toString('utf8'), field);
+  if (Array.isArray(raw)) {
+    if (raw.length === 1 && typeof raw[0] === 'string' && raw[0].trim().startsWith('[')) {
+      return parseBulletList(raw[0].trim(), field);
+    }
+    return raw.map((v) => String(v).trim()).filter(Boolean);
+  }
+  const str = String(raw).trim();
+  if (!str) return [];
+  if (str.startsWith('[')) {
+    try {
+      const parsed = JSON.parse(str);
+      if (Array.isArray(parsed)) return parsed.map((v) => String(v).trim()).filter(Boolean);
+    } catch {
+      throw new AppError(`${field} must be a valid JSON array.`, 400);
+    }
+  }
+  return str
+    .split(/\r?\n/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+/**
+ * Cover image may arrive as an upload (multipart) or as a plain URL string, so
+ * existing JSON callers keep working after multer was added to these routes.
+ */
+function resolveCoverImageUrl(req: AuthRequest): string | null | undefined {
+  const uploaded = (req.file as (Express.Multer.File & { path?: string }) | undefined)?.path;
+  if (uploaded) return uploaded;
+  const raw = req.body?.coverImageUrl;
+  if (raw === undefined) return undefined;
+  if (raw === null || String(raw).trim() === '') return null;
+  return String(raw).trim();
+}
 
 const CAL_EVENT_TYPE_TAKEN =
   'A consultation service already uses this Cal.com event type. Use a different event type or update the existing service.';
@@ -47,18 +119,15 @@ export const getServices = catchAsync(async (_req: Request, res: Response) => {
   const services = await prisma.consultationService.findMany({
     where: { isActive: true },
     orderBy: { createdAt: 'asc' },
+    include: serviceRelationInclude,
   });
 
-  res.json({ success: true, message: 'Services fetched.', data: services });
+  res.json({ success: true, message: 'Services fetched.', data: services.map(serializeService) });
 });
 
 // GET /api/consultations/services/:id — Single service detail
 export const getServiceById = catchAsync(async (req: Request, res: Response) => {
-  const service = await prisma.consultationService.findUnique({
-    where: { id: req.params.id },
-  });
-
-  if (!service) throw new AppError('Service not found.', 404);
+  const service = await findServiceForResponse(req.params.id);
 
   res.json({ success: true, message: 'Service fetched.', data: service });
 });
@@ -191,7 +260,7 @@ export const updateConsultation = catchAsync(async (req: Request, res: Response)
 });
 
 // POST /api/admin/consultations/services — Create a new service
-export const createService = catchAsync(async (req: Request, res: Response) => {
+export const createService = catchAsync(async (req: AuthRequest, res: Response) => {
   const { title, description, price, currency, duration, calEventTypeId } = req.body;
 
   let parsedCal: number | undefined;
@@ -204,21 +273,20 @@ export const createService = catchAsync(async (req: Request, res: Response) => {
 
   const parsedCurrency = parsePlatformCurrency(currency);
 
-  const createData: {
-    title: string;
-    description: string;
-    price: number;
-    duration: number;
-    calEventTypeId?: number;
-    calBookingUrl?: string | null;
-    currency?: ReturnType<typeof parsePlatformCurrency>;
-  } = {
+  const coverImageUrl = resolveCoverImageUrl(req);
+  const formatTagId = await resolveFormatTagId(req.body.format);
+
+  const createData: Prisma.ConsultationServiceUncheckedCreateInput = {
     title,
     description,
     price: parseFloat(price),
     duration: parseInt(duration, 10),
+    audience: parseBulletList(req.body.audience, 'audience'),
+    whatsIncluded: parseBulletList(req.body.whatsIncluded, 'whatsIncluded'),
     ...(parsedCal !== undefined && { calEventTypeId: parsedCal }),
     ...(parsedCurrency !== undefined && { currency: parsedCurrency }),
+    ...(coverImageUrl !== undefined && { coverImageUrl }),
+    ...(formatTagId !== undefined && { formatTagId }),
   };
 
   if ('calBookingUrl' in req.body) {
@@ -226,23 +294,28 @@ export const createService = catchAsync(async (req: Request, res: Response) => {
     if (u !== undefined) createData.calBookingUrl = u;
   }
 
+  let serviceId: string;
   try {
-    const service = await prisma.consultationService.create({
-      data: createData,
-    });
-
-    scheduleChatReindexConsultationService(service.id);
-    res.status(201).json({ success: true, message: 'Service created.', data: service });
+    const service = await prisma.consultationService.create({ data: createData });
+    serviceId = service.id;
   } catch (e) {
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
       throw new AppError(CAL_EVENT_TYPE_TAKEN, 409);
     }
     throw e;
   }
+
+  if (req.body.tags !== undefined) {
+    await syncConsultationServiceTags(serviceId, req.body.tags);
+  }
+  const created = await findServiceForResponse(serviceId);
+
+  scheduleChatReindexConsultationService(serviceId);
+  res.status(201).json({ success: true, message: 'Service created.', data: created });
 });
 
 // PATCH /api/admin/consultations/services/:id — Edit a service
-export const updateService = catchAsync(async (req: Request, res: Response) => {
+export const updateService = catchAsync(async (req: AuthRequest, res: Response) => {
   const { title, description, price, currency, duration, isActive, calEventTypeId } = req.body;
 
   let nextCal: number | null | undefined;
@@ -266,8 +339,11 @@ export const updateService = catchAsync(async (req: Request, res: Response) => {
     if (u !== undefined) nextCalBookingUrl = u;
   }
 
+  const coverImageUrl = resolveCoverImageUrl(req);
+  const formatTagId = await resolveFormatTagId(req.body.format);
+
   try {
-    const service = await prisma.consultationService.update({
+    await prisma.consultationService.update({
       where: { id: req.params.id },
       data: {
         ...(title && { title }),
@@ -280,15 +356,32 @@ export const updateService = catchAsync(async (req: Request, res: Response) => {
         ...(isActive !== undefined && { isActive }),
         ...(calEventTypeId !== undefined && { calEventTypeId: nextCal as number | null }),
         ...(nextCalBookingUrl !== undefined && { calBookingUrl: nextCalBookingUrl }),
+        ...(coverImageUrl !== undefined && { coverImageUrl }),
+        ...(formatTagId !== undefined && { formatTagId }),
+        // Omit to keep; send [] (or '') to clear.
+        ...(req.body.audience !== undefined && {
+          audience: { set: parseBulletList(req.body.audience, 'audience') },
+        }),
+        ...(req.body.whatsIncluded !== undefined && {
+          whatsIncluded: { set: parseBulletList(req.body.whatsIncluded, 'whatsIncluded') },
+        }),
       },
     });
-
-    scheduleChatReindexConsultationService(service.id);
-    res.json({ success: true, message: 'Service updated.', data: service });
   } catch (e) {
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
       throw new AppError(CAL_EVENT_TYPE_TAKEN, 409);
     }
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2025') {
+      throw new AppError('Service not found.', 404);
+    }
     throw e;
   }
+
+  if (req.body.tags !== undefined) {
+    await syncConsultationServiceTags(req.params.id, req.body.tags);
+  }
+  const service = await findServiceForResponse(req.params.id);
+
+  scheduleChatReindexConsultationService(req.params.id);
+  res.json({ success: true, message: 'Service updated.', data: service });
 });
