@@ -49,6 +49,10 @@ export function scheduleChatReindexTestimonial(testimonialId: string): void {
   scheduleChatReindexSource(ChatKnowledgeSourceType.TESTIMONIAL, testimonialId);
 }
 
+export function scheduleChatReindexCommunity(communityId: string): void {
+  scheduleChatReindexSource(ChatKnowledgeSourceType.COMMUNITY, communityId);
+}
+
 export function scheduleChatReindexPolicy(): void {
   scheduleChatReindexSource(ChatKnowledgeSourceType.POLICY, POLICY_SOURCE_ID);
 }
@@ -71,4 +75,8 @@ export function scheduleChatDeleteConsultationService(serviceId: string): void {
 
 export function scheduleChatDeleteTestimonial(testimonialId: string): void {
   scheduleChatDeleteSource(ChatKnowledgeSourceType.TESTIMONIAL, testimonialId);
+}
+
+export function scheduleChatDeleteCommunity(communityId: string): void {
+  scheduleChatDeleteSource(ChatKnowledgeSourceType.COMMUNITY, communityId);
 }

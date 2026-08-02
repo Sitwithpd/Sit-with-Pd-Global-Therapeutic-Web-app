@@ -11,6 +11,10 @@ import { embedText, embedTexts, embeddingToVectorLiteral } from './embedding.ser
 import { extractAllBlogChunks, extractBlogChunks } from './extractors/blog.extractor';
 import { extractAllCampChunks, extractCampChunks } from './extractors/camp.extractor';
 import {
+  extractAllCommunityChunks,
+  extractCommunityChunks,
+} from './extractors/community.extractor';
+import {
   extractAllConsultationChunks,
   extractConsultationChunks,
 } from './extractors/consultation.extractor';
@@ -174,6 +178,8 @@ async function collectChunks(
       return sourceId ? extractBlogChunks(sourceId) : extractAllBlogChunks();
     case ChatKnowledgeSourceType.TESTIMONIAL:
       return sourceId ? extractTestimonialChunks(sourceId) : extractAllTestimonialChunks();
+    case ChatKnowledgeSourceType.COMMUNITY:
+      return sourceId ? extractCommunityChunks(sourceId) : extractAllCommunityChunks();
     default:
       throw new Error(`Unsupported knowledge source type: ${sourceType}`);
   }
@@ -210,6 +216,13 @@ async function listValidSourceIds(sourceType: ChatKnowledgeSourceType): Promise<
     }
     case ChatKnowledgeSourceType.TESTIMONIAL: {
       const rows = await prisma.testimonial.findMany({
+        where: { isPublished: true },
+        select: { id: true },
+      });
+      return new Set(rows.map((r) => r.id));
+    }
+    case ChatKnowledgeSourceType.COMMUNITY: {
+      const rows = await prisma.community.findMany({
         where: { isPublished: true },
         select: { id: true },
       });

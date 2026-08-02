@@ -16,6 +16,8 @@ import blogRoutes from './routes/blog.routes';
 import newsletterRoutes from './routes/newsletter.routes';
 import contactRoutes from './routes/contact.routes';
 import teamRoutes from './routes/team.routes';
+import tagRoutes from './routes/tag.routes';
+import communityRoutes from './routes/community.routes';
 import chatRoutes from './routes/chat.routes';
 import { dashboardRouter, adminRouter } from './routes/admin.routes';
 import { errorHandler } from './middleware/error.middleware';
@@ -184,6 +186,9 @@ app.use('/api/blog', blogRoutes);
 app.use('/api/newsletter', newsletterLimiter, newsletterRoutes);
 app.use('/api/contact', contactLimiter, contactRoutes);
 app.use('/api/team', teamRoutes);
+app.use('/api/tags', tagRoutes);
+// Join has its own tighter limiter inside the router (it sends mail).
+app.use('/api/communities', communityRoutes);
 app.use('/api/chat', chatLimiter, chatRoutes);
 app.use('/api/consultations', consultationRoutes);
 app.use('/api/payments', paymentRoutes);

@@ -289,6 +289,86 @@ export const sendContactFormAutoReplyEmail = async (params: {
   });
 };
 
+// ── Community: WhatsApp invite after a join application ──────────────────────
+// Sent immediately on successful submit. This is the ONLY place the group link
+// leaves the server — it is stripped from every public API response and is
+// never indexed into the chat knowledge base.
+export const sendCommunityWelcomeEmail = async (params: {
+  to: string;
+  fullName: string;
+  communityTitle: string;
+  whatsappLink: string;
+}) => {
+  const { to, fullName, communityTitle, whatsappLink } = params;
+  const safeTitle = escapeHtml(communityTitle);
+  // Used both as an href and as visible text, so escape for the attribute too.
+  const safeLink = escapeHtml(whatsappLink);
+
+  await sendMail({
+    from: transactionalFrom(),
+    to,
+    subject: `You're in — ${communityTitle}`,
+    html: `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2>Welcome, ${escapeHtml(fullName)}! 🎉</h2>
+        <p>Your application to join <strong>${safeTitle}</strong> has been received, and your invite is ready.</p>
+        <p>Tap below to join the WhatsApp group:</p>
+        <a href="${safeLink}"
+           style="background:#567F57;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;display:inline-block;margin-top:12px;">
+          Join ${safeTitle}
+        </a>
+        <p style="margin-top:24px;font-size:13px;color:#666;">
+          If the button doesn't work, copy this link into your browser:<br />
+          <span style="word-break:break-all;">${safeLink}</span>
+        </p>
+        <p style="margin-top:24px;color:#888;font-size:12px;">
+          This invite was sent to you because someone used this address to apply. If that wasn't you, you can ignore this email.
+        </p>
+        ${emailBrandSignOff()}
+      </div>
+    `,
+  });
+};
+
+/** Admin notification that a new community join application arrived. */
+export const sendCommunityJoinNotificationEmail = async (params: {
+  to: string;
+  fullName: string;
+  email: string;
+  phone: string | null;
+  reason: string | null;
+  communityTitle: string;
+  requestId: string;
+}) => {
+  const { to, fullName, email, phone, reason, communityTitle, requestId } = params;
+  const phoneLine = phone
+    ? `<p><strong>Phone:</strong> ${escapeHtml(phone)}</p>`
+    : '<p><strong>Phone:</strong> <em>Not provided</em></p>';
+  const reasonBlock = reason
+    ? `<hr style="border:none;border-top:1px solid #eee;margin:16px 0;" />
+       <p><strong>Why they want to join</strong></p>
+       <div style="white-space:pre-wrap;">${escapeHtml(reason)}</div>`
+    : '';
+
+  await sendMail({
+    from: transactionalFrom(),
+    to,
+    replyTo: email,
+    subject: `Community application: ${communityTitle}`,
+    html: `
+      <div style="font-family: sans-serif; max-width: 600px;">
+        <p><strong>New application</strong> for <strong>${escapeHtml(communityTitle)}</strong>.</p>
+        <p><strong>Request ID:</strong> ${escapeHtml(requestId)}</p>
+        <p><strong>Name:</strong> ${escapeHtml(fullName)}</p>
+        <p><strong>Email:</strong> ${escapeHtml(email)}</p>
+        ${phoneLine}
+        ${reasonBlock}
+        ${emailBrandSignOff()}
+      </div>
+    `,
+  });
+};
+
 /** Purchased-program participant → facilitator email on Program. */
 export const sendDashboardFacilitatorMessageEmail = async (params: {
   to: string;

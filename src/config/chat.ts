@@ -34,6 +34,7 @@ export const CHAT_FRONTEND_PATHS = {
   camps: '/camps',
   campDetail: (id: string) => `/camps/${id}`,
   consultations: '/consultations',
+  community: '/community',
   contact: '/contact',
   dashboard: '/dashboard',
   blogPost: (slug: string) => `/blog/${slug}`,
