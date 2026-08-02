@@ -5,31 +5,130 @@
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
-    { "key": "baseUrl", "value": "http://localhost:5000", "type": "string" },
-    { "key": "authToken", "value": "", "type": "string" },
-    { "key": "programId", "value": "", "type": "string" },
-    { "key": "programModuleId", "value": "", "type": "string" },
-    { "key": "lessonId", "value": "", "type": "string" },
-    { "key": "campId", "value": "", "type": "string" },
-    { "key": "campRegistrationId", "value": "", "type": "string" },
-    { "key": "campTierId", "value": "", "type": "string" },
-    { "key": "campImageId", "value": "", "type": "string" },
-    { "key": "testimonialId", "value": "", "type": "string" },
-    { "key": "teamMemberId", "value": "", "type": "string" },
-    { "key": "serviceId", "value": "", "type": "string" },
-    { "key": "consultationId", "value": "", "type": "string" },
-    { "key": "paymentRef", "value": "", "type": "string" },
-    { "key": "flutterwaveWebhookHash", "value": "", "type": "string" },
-    { "key": "userId", "value": "", "type": "string" },
-    { "key": "verifyToken", "value": "", "type": "string" },
-    { "key": "blogPostId", "value": "", "type": "string" },
-    { "key": "blogSlug", "value": "learning-to-sit-with-your-emotions", "type": "string" },
-    { "key": "newsletterUnsubscribeToken", "value": "", "type": "string" },
-    { "key": "contactSubmissionId", "value": "", "type": "string" },
-    { "key": "chatSessionId", "value": "", "type": "string" }
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "authToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "programId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "programModuleId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "lessonId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "campId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "campRegistrationId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "campTierId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "campImageId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "testimonialId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "teamMemberId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "serviceId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "consultationId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "paymentRef",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "flutterwaveWebhookHash",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "verifyToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "blogPostId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "blogSlug",
+      "value": "learning-to-sit-with-your-emotions",
+      "type": "string"
+    },
+    {
+      "key": "newsletterUnsubscribeToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "contactSubmissionId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "chatSessionId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "communityId",
+      "value": ""
+    },
+    {
+      "key": "communitySlug",
+      "value": "the-generalist-pathfinders"
+    },
+    {
+      "key": "joinRequestId",
+      "value": ""
+    }
   ],
   "item": [
-
     {
       "name": "🏥 Health Check",
       "item": [
@@ -37,13 +136,20 @@
           "name": "Health Check",
           "request": {
             "method": "GET",
-            "url": { "raw": "{{baseUrl}}/health", "host": ["{{baseUrl}}"], "path": ["health"] },
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            },
             "description": "Verify the server is running."
           }
         }
       ]
     },
-
     {
       "name": "📧 Newsletter",
       "item": [
@@ -51,15 +157,26 @@
           "name": "[Public] Newsletter Subscribe",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"email\": \"newsletter@example.com\",\n  \"source\": \"footer\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/newsletter/subscribe",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "newsletter", "subscribe"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "newsletter",
+                "subscribe"
+              ]
             },
             "description": "No auth. Stricter rate limit (30/15min). Saves to PostgreSQL and syncs to Resend Contacts when RESEND_API_KEY is set."
           }
@@ -68,14 +185,32 @@
           "name": "[Public] Newsletter Unsubscribe (JSON)",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Accept", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/newsletter/unsubscribe?token={{newsletterUnsubscribeToken}}&format=json",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "newsletter", "unsubscribe"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "newsletter",
+                "unsubscribe"
+              ],
               "query": [
-                { "key": "token", "value": "{{newsletterUnsubscribeToken}}", "description": "From DB newsletter_subscriptions.unsubscribeToken after subscribe." },
-                { "key": "format", "value": "json" }
+                {
+                  "key": "token",
+                  "value": "{{newsletterUnsubscribeToken}}",
+                  "description": "From DB newsletter_subscriptions.unsubscribeToken after subscribe."
+                },
+                {
+                  "key": "format",
+                  "value": "json"
+                }
               ]
             },
             "description": "Token from DB newsletter_subscriptions.unsubscribeToken after subscribe — paste into collection variable newsletterUnsubscribeToken. Omit format/json for 302 redirect to CLIENT_URL."
@@ -85,16 +220,43 @@
           "name": "[ADMIN] List newsletter subscriptions",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/admin/newsletter/subscriptions?page=1&limit=20&search=&status=all",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "admin", "newsletter", "subscriptions"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "newsletter",
+                "subscriptions"
+              ],
               "query": [
-                { "key": "page", "value": "1" },
-                { "key": "limit", "value": "20", "description": "max 100" },
-                { "key": "search", "value": "", "description": "substring on email or source" },
-                { "key": "status", "value": "all", "description": "all | active | unsubscribed" }
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "max 100"
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "substring on email or source"
+                },
+                {
+                  "key": "status",
+                  "value": "all",
+                  "description": "all | active | unsubscribed"
+                }
               ]
             },
             "description": "Omits unsubscribeToken per row for security."
@@ -102,7 +264,6 @@
         }
       ]
     },
-
     {
       "name": "📬 Contact",
       "item": [
@@ -110,15 +271,25 @@
           "name": "[Public] Submit Contact Form",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"fullName\": \"Jane Doe\",\n  \"email\": \"jane@example.com\",\n  \"phone\": \"+447359307733\",\n  \"message\": \"I'd like to learn more about your annual camping programme.\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/contact",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "contact"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "contact"
+              ]
             },
             "description": "Public Contact Us — no auth. Saves to contact_submissions and emails platform supportEmail. Optional phone. Honeypot: website/company fields silently ignored if filled."
           }
@@ -127,15 +298,36 @@
           "name": "[ADMIN] List Contact Submissions",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/admin/contact-submissions?page=1&limit=20",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "admin", "contact-submissions"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "contact-submissions"
+              ],
               "query": [
-                { "key": "page", "value": "1" },
-                { "key": "limit", "value": "20" },
-                { "key": "search", "value": "", "description": "optional filter on email, fullName, phone" }
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "optional filter on email, fullName, phone"
+                }
               ]
             },
             "description": "Admin only. Paginated contact form submissions."
@@ -145,18 +337,29 @@
           "name": "[ADMIN] Delete Contact Submission",
           "request": {
             "method": "DELETE",
-            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/admin/contact-submissions/{{contactSubmissionId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "admin", "contact-submissions", "{{contactSubmissionId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "contact-submissions",
+                "{{contactSubmissionId}}"
+              ]
             },
             "description": "Admin only. Permanent delete — spam, test data, or GDPR erasure. Does not undo emails already sent."
           }
         }
       ]
     },
-
     {
       "name": "🔐 Auth",
       "item": [
@@ -182,8 +385,23 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "url": { "raw": "{{baseUrl}}/api/auth/register", "host": ["{{baseUrl}}"], "path": ["api", "auth", "register"] },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
             "body": {
               "mode": "raw",
               "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"email\": \"john@example.com\",\n  \"password\": \"Password123\"\n}"
@@ -213,8 +431,23 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
             "body": {
               "mode": "raw",
               "raw": "{\n  \"email\": \"admin@wellbeing.com\",\n  \"password\": \"Admin@1234\"\n}"
@@ -244,8 +477,23 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "url": { "raw": "{{baseUrl}}/api/auth/google", "host": ["{{baseUrl}}"], "path": ["api", "auth", "google"] },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/google",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "google"
+              ]
+            },
             "body": {
               "mode": "raw",
               "raw": "{\n  \"idToken\": \"PASTE_GOOGLE_ID_TOKEN_HERE\"\n}"
@@ -257,8 +505,23 @@
           "name": "Get Current User (Me)",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/auth/me", "host": ["{{baseUrl}}"], "path": ["api", "auth", "me"] },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
+            },
             "description": "Returns the authenticated user: core fields plus Settings — phone, timezone, notifyEmail, notifyProgramReminders, notifyPush, hasPassword — and createdAt.\nOAuth-only accounts typically have hasPassword false."
           }
         },
@@ -267,10 +530,26 @@
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{authToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
-            "url": { "raw": "{{baseUrl}}/api/auth/profile", "host": ["{{baseUrl}}"], "path": ["api", "auth", "profile"] },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "profile"
+              ]
+            },
             "body": {
               "mode": "raw",
               "raw": "{\n  \"firstName\": \"Tinu\",\n  \"lastName\": \"Boroni\",\n  \"phone\": \"+2348000000000\",\n  \"timezone\": \"Africa/Lagos\"\n}"
@@ -283,10 +562,26 @@
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{authToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
-            "url": { "raw": "{{baseUrl}}/api/auth/password", "host": ["{{baseUrl}}"], "path": ["api", "auth", "password"] },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "password"
+              ]
+            },
             "body": {
               "mode": "raw",
               "raw": "{\n  \"currentPassword\": \"Admin@1234\",\n  \"newPassword\": \"NewPassword123\"\n}"
@@ -299,10 +594,26 @@
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{authToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
-            "url": { "raw": "{{baseUrl}}/api/auth/notifications", "host": ["{{baseUrl}}"], "path": ["api", "auth", "notifications"] },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/notifications",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "notifications"
+              ]
+            },
             "body": {
               "mode": "raw",
               "raw": "{\n  \"notifyEmail\": true,\n  \"notifyProgramReminders\": false,\n  \"notifyPush\": true\n}"
@@ -316,9 +627,20 @@
             "method": "GET",
             "url": {
               "raw": "{{baseUrl}}/api/auth/verify-email?token={{verifyToken}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "verify-email"],
-              "query": [{ "key": "token", "value": "{{verifyToken}}" }]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "verify-email"
+              ],
+              "query": [
+                {
+                  "key": "token",
+                  "value": "{{verifyToken}}"
+                }
+              ]
             },
             "description": "Confirm email using the token from the verification email (48h expiry). Set `verifyToken` from the email link query string. Response `data`: id, firstName, lastName, email, role, isEmailVerified, createdAt — use GET /me for Settings fields."
           }
@@ -327,8 +649,23 @@
           "name": "Resend Verification Email",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/auth/resend-verification", "host": ["{{baseUrl}}"], "path": ["api", "auth", "resend-verification"] },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/resend-verification",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "resend-verification"
+              ]
+            },
             "description": "Logged-in users only. Sends a new verification link if the account is not yet verified."
           }
         },
@@ -336,8 +673,23 @@
           "name": "Forgot Password",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "url": { "raw": "{{baseUrl}}/api/auth/forgot-password", "host": ["{{baseUrl}}"], "path": ["api", "auth", "forgot-password"] },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/forgot-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "forgot-password"
+              ]
+            },
             "body": {
               "mode": "raw",
               "raw": "{\n  \"email\": \"john@example.com\"\n}"
@@ -349,8 +701,23 @@
           "name": "Reset Password",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "url": { "raw": "{{baseUrl}}/api/auth/reset-password", "host": ["{{baseUrl}}"], "path": ["api", "auth", "reset-password"] },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/reset-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "reset-password"
+              ]
+            },
             "body": {
               "mode": "raw",
               "raw": "{\n  \"token\": \"PASTE_RESET_TOKEN_FROM_EMAIL_HERE\",\n  \"password\": \"NewPassword123\"\n}"
@@ -360,7 +727,6 @@
         }
       ]
     },
-
     {
       "name": "📚 Programs",
       "item": [
@@ -370,11 +736,24 @@
             "method": "GET",
             "url": {
               "raw": "{{baseUrl}}/api/programs?search=&category=",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "programs"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "programs"
+              ],
               "query": [
-                { "key": "search", "value": "", "description": "Substring on title/description (case-insensitive). Max 100 chars." },
-                { "key": "category", "value": "", "description": "LEADERS | STUDENTS | PROFESSIONALS" }
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Substring on title/description (case-insensitive). Max 100 chars."
+                },
+                {
+                  "key": "category",
+                  "value": "",
+                  "description": "LEADERS | STUDENTS | PROFESSIONALS"
+                }
               ]
             },
             "description": "Published programs only. Optional filters: search, category (program type). No auth."
@@ -384,7 +763,17 @@
           "name": "Get Program by ID (Public)",
           "request": {
             "method": "GET",
-            "url": { "raw": "{{baseUrl}}/api/programs/{{programId}}", "host": ["{{baseUrl}}"], "path": ["api", "programs", "{{programId}}"] },
+            "url": {
+              "raw": "{{baseUrl}}/api/programs/{{programId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "programs",
+                "{{programId}}"
+              ]
+            },
             "description": "Returns program details and lesson titles (no video URLs until purchased)."
           }
         },
@@ -392,16 +781,44 @@
           "name": "[ADMIN] Get All Programs (incl. unpublished)",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/programs/admin/all?page=1&limit=20&search=&category=",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "programs", "admin", "all"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "programs",
+                "admin",
+                "all"
+              ],
               "query": [
-                { "key": "page", "value": "1", "description": "default 1" },
-                { "key": "limit", "value": "20", "description": "default 20, max 100" },
-                { "key": "search", "value": "", "description": "Substring on title/description (case-insensitive). Max 100 chars." },
-                { "key": "category", "value": "", "description": "LEADERS | STUDENTS | PROFESSIONALS" }
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "default 1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "default 20, max 100"
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Substring on title/description (case-insensitive). Max 100 chars."
+                },
+                {
+                  "key": "category",
+                  "value": "",
+                  "description": "LEADERS | STUDENTS | PROFESSIONALS"
+                }
               ]
             },
             "description": "Admin only. Paginated. Optional search + category (program type). Programs (published and unpublished) with week/purchase _counts. Response: { data, meta }."
@@ -426,42 +843,132 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/programs", "host": ["{{baseUrl}}"], "path": ["api", "programs"] },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/programs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "programs"
+              ]
+            },
             "body": {
               "mode": "formdata",
               "formdata": [
-                { "key": "title", "value": "30-Day Mindfulness Journey", "type": "text" },
-                { "key": "description", "value": "Transform your mental wellness with this structured 30-day program.", "type": "text" },
-                { "key": "price", "value": "25000", "type": "text" },
-                { "key": "thumbnail", "type": "file", "src": "", "description": "Optional: upload a thumbnail image" }
+                {
+                  "key": "title",
+                  "value": "30-Day Mindfulness Journey",
+                  "type": "text"
+                },
+                {
+                  "key": "description",
+                  "value": "Transform your mental wellness with this structured 30-day program.",
+                  "type": "text"
+                },
+                {
+                  "key": "price",
+                  "value": "25000",
+                  "type": "text"
+                },
+                {
+                  "key": "thumbnail",
+                  "type": "file",
+                  "src": "",
+                  "description": "Optional: upload a thumbnail image"
+                },
+                {
+                  "key": "audience",
+                  "type": "text",
+                  "value": "[\"Mid-career professionals feeling stuck after a role change\", \"First-time managers leading a team for the first time\"]"
+                },
+                {
+                  "key": "tags",
+                  "type": "text",
+                  "value": "[\"Leadership\", \"Self-Discovery\"]"
+                }
               ]
             },
-            "description": "Admin only. Creates a new program. Use form-data to optionally attach a thumbnail image."
+            "description": "Admin only. Creates a new program. Use form-data to optionally attach a thumbnail image. audience = full-sentence bullets (JSON array). tags = short TOPIC pills (JSON array); unknown names are created automatically. On PATCH, omit to keep, send [] to clear."
           }
         },
         {
           "name": "[ADMIN] Update Program",
           "request": {
             "method": "PATCH",
-            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/programs/{{programId}}", "host": ["{{baseUrl}}"], "path": ["api", "programs", "{{programId}}"] },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/programs/{{programId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "programs",
+                "{{programId}}"
+              ]
+            },
             "body": {
               "mode": "formdata",
               "formdata": [
-                { "key": "title", "value": "Updated Program Title", "type": "text" },
-                { "key": "isPublished", "value": "true", "type": "text", "description": "Set to true to publish, false to unpublish" }
+                {
+                  "key": "title",
+                  "value": "Updated Program Title",
+                  "type": "text"
+                },
+                {
+                  "key": "isPublished",
+                  "value": "true",
+                  "type": "text",
+                  "description": "Set to true to publish, false to unpublish"
+                },
+                {
+                  "key": "audience",
+                  "type": "text",
+                  "value": "[\"Mid-career professionals feeling stuck after a role change\", \"First-time managers leading a team for the first time\"]"
+                },
+                {
+                  "key": "tags",
+                  "type": "text",
+                  "value": "[\"Leadership\", \"Self-Discovery\"]"
+                }
               ]
             },
-            "description": "Admin only. Updates any program fields. Set isPublished=true to make it visible to users."
+            "description": "Admin only. Updates any program fields. Set isPublished=true to make it visible to users. audience = full-sentence bullets (JSON array). tags = short TOPIC pills (JSON array); unknown names are created automatically. On PATCH, omit to keep, send [] to clear."
           }
         },
         {
           "name": "[ADMIN] Delete Program",
           "request": {
             "method": "DELETE",
-            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/programs/{{programId}}", "host": ["{{baseUrl}}"], "path": ["api", "programs", "{{programId}}"] },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/programs/{{programId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "programs",
+                "{{programId}}"
+              ]
+            },
             "description": "Admin only. Permanently deletes a program and all its lessons."
           }
         },
@@ -484,17 +991,59 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/programs/{{programId}}/lessons", "host": ["{{baseUrl}}"], "path": ["api", "programs", "{{programId}}", "lessons"] },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/programs/{{programId}}/lessons",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "programs",
+                "{{programId}}",
+                "lessons"
+              ]
+            },
             "body": {
               "mode": "formdata",
               "formdata": [
-                { "key": "title", "value": "Introduction to Mindfulness", "type": "text" },
-                { "key": "description", "value": "What mindfulness is and why it matters.", "type": "text" },
-                { "key": "content", "value": "Welcome to lesson one. In this lesson we explore...", "type": "text" },
-                { "key": "order", "value": "1", "type": "text" },
-                { "key": "video", "type": "file", "src": "", "description": "Optional: upload a video file" },
-                { "key": "file", "type": "file", "src": "", "description": "Optional: upload a PDF/document" }
+                {
+                  "key": "title",
+                  "value": "Introduction to Mindfulness",
+                  "type": "text"
+                },
+                {
+                  "key": "description",
+                  "value": "What mindfulness is and why it matters.",
+                  "type": "text"
+                },
+                {
+                  "key": "content",
+                  "value": "Welcome to lesson one. In this lesson we explore...",
+                  "type": "text"
+                },
+                {
+                  "key": "order",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "video",
+                  "type": "file",
+                  "src": "",
+                  "description": "Optional: upload a video file"
+                },
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "",
+                  "description": "Optional: upload a PDF/document"
+                }
               ]
             },
             "description": "Admin only. Adds a lesson to a program. Can include video upload and/or file upload."
@@ -504,13 +1053,38 @@
           "name": "[ADMIN] Update Lesson",
           "request": {
             "method": "PATCH",
-            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/programs/{{programId}}/lessons/{{lessonId}}", "host": ["{{baseUrl}}"], "path": ["api", "programs", "{{programId}}", "lessons", "{{lessonId}}"] },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/programs/{{programId}}/lessons/{{lessonId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "programs",
+                "{{programId}}",
+                "lessons",
+                "{{lessonId}}"
+              ]
+            },
             "body": {
               "mode": "formdata",
               "formdata": [
-                { "key": "title", "value": "Updated Lesson Title", "type": "text" },
-                { "key": "content", "value": "Updated lesson content goes here...", "type": "text" }
+                {
+                  "key": "title",
+                  "value": "Updated Lesson Title",
+                  "type": "text"
+                },
+                {
+                  "key": "content",
+                  "value": "Updated lesson content goes here...",
+                  "type": "text"
+                }
               ]
             },
             "description": "Admin only. Updates a specific lesson."
@@ -520,14 +1094,30 @@
           "name": "[ADMIN] Delete Lesson",
           "request": {
             "method": "DELETE",
-            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/programs/{{programId}}/lessons/{{lessonId}}", "host": ["{{baseUrl}}"], "path": ["api", "programs", "{{programId}}", "lessons", "{{lessonId}}"] },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/programs/{{programId}}/lessons/{{lessonId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "programs",
+                "{{programId}}",
+                "lessons",
+                "{{lessonId}}"
+              ]
+            },
             "description": "Admin only. Deletes a specific lesson from a program."
           }
         }
       ]
     },
-
     {
       "name": "⛺ Camps",
       "item": [
@@ -535,7 +1125,16 @@
           "name": "Get All Camps (Public)",
           "request": {
             "method": "GET",
-            "url": { "raw": "{{baseUrl}}/api/camps", "host": ["{{baseUrl}}"], "path": ["api", "camps"] },
+            "url": {
+              "raw": "{{baseUrl}}/api/camps",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "camps"
+              ]
+            },
             "description": "Returns all upcoming and ongoing camps. No auth required. Each camp includes tiers, gallery images, published testimonials, benefits, seatsTaken, and seatsRemaining."
           }
         },
@@ -543,14 +1142,32 @@
           "name": "[ADMIN] Get All Camps (list + search + status)",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/camps/admin/all?page=1&limit=20&search=&status=",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "camps", "admin", "all"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "camps",
+                "admin",
+                "all"
+              ],
               "query": [
-                { "key": "page", "value": "1" },
-                { "key": "limit", "value": "20" },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
                 {
                   "key": "search",
                   "value": "",
@@ -588,7 +1205,17 @@
           ],
           "request": {
             "method": "GET",
-            "url": { "raw": "{{baseUrl}}/api/camps/current", "host": ["{{baseUrl}}"], "path": ["api", "camps", "current"] },
+            "url": {
+              "raw": "{{baseUrl}}/api/camps/current",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "camps",
+                "current"
+              ]
+            },
             "description": "Next upcoming camp (earliest UPCOMING) for the landing page. Test script saves campId and first campTierId when present."
           }
         },
@@ -610,7 +1237,17 @@
           ],
           "request": {
             "method": "GET",
-            "url": { "raw": "{{baseUrl}}/api/camps/{{campId}}", "host": ["{{baseUrl}}"], "path": ["api", "camps", "{{campId}}"] },
+            "url": {
+              "raw": "{{baseUrl}}/api/camps/{{campId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "camps",
+                "{{campId}}"
+              ]
+            },
             "description": "Returns full camp details including tiers, images, published testimonials, benefits, seatsTaken, and seatsRemaining."
           }
         },
@@ -634,10 +1271,27 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{authToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
-            "url": { "raw": "{{baseUrl}}/api/camps/{{campId}}/register", "host": ["{{baseUrl}}"], "path": ["api", "camps", "{{campId}}", "register"] },
+            "url": {
+              "raw": "{{baseUrl}}/api/camps/{{campId}}/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "camps",
+                "{{campId}}",
+                "register"
+              ]
+            },
             "body": {
               "mode": "raw",
               "raw": "{\n  \"tierId\": \"{{campTierId}}\",\n  \"applicantDetails\": {\n    \"fullName\": \"Jane Doe\",\n    \"phone\": \"+2348000000000\",\n    \"emergencyContact\": {\n      \"name\": \"John Doe\",\n      \"phone\": \"+2348000000001\",\n      \"relationship\": \"Spouse\"\n    },\n    \"dietaryRestrictions\": \"Vegetarian\",\n    \"accommodationPreference\": \"Ground floor if possible\",\n    \"partyMembers\": [],\n    \"notes\": \"First time attending.\"\n  }\n}"
@@ -650,12 +1304,22 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/camps/{{campId}}/my-registration",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "camps", "{{campId}}", "my-registration"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "camps",
+                "{{campId}}",
+                "my-registration"
+              ]
             },
             "description": "Returns the logged-in user's registration for this camp (status, paymentExpiresAt, tier, payment) or data=null when none. Use to drive Apply vs Complete payment vs Confirmed without guessing."
           }
@@ -679,49 +1343,160 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/camps", "host": ["{{baseUrl}}"], "path": ["api", "camps"] },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/camps",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "camps"
+              ]
+            },
             "body": {
               "mode": "formdata",
               "formdata": [
-                { "key": "title", "value": "Sit-With-PD Annual Camping Programme", "type": "text" },
-                { "key": "description", "value": "A presence-based retreat to pause, reflect, and reconnect.", "type": "text" },
-                { "key": "location", "value": "Retreat venue TBD", "type": "text" },
-                { "key": "currency", "value": "USD", "type": "text", "description": "ISO currency code (e.g. USD, NGN)" },
-                { "key": "benefits", "value": "[\"Pause and reconnect with yourself\",\"Experience guided reflective practices\",\"Build meaningful connections\",\"Gain clarity and emotional balance\"]", "type": "text", "description": "JSON array or comma-separated list" },
-                { "key": "capacity", "value": "30", "type": "text", "description": "Total seats (sum of registration participantCount)" },
-                { "key": "startDate", "value": "2026-05-01T08:00:00.000Z", "type": "text" },
-                { "key": "endDate", "value": "2026-05-03T17:00:00.000Z", "type": "text" },
-                { "key": "thumbnail", "type": "file", "src": "", "description": "Optional: camp thumbnail image" }
+                {
+                  "key": "title",
+                  "value": "Sit-With-PD Annual Camping Programme",
+                  "type": "text"
+                },
+                {
+                  "key": "description",
+                  "value": "A presence-based retreat to pause, reflect, and reconnect.",
+                  "type": "text"
+                },
+                {
+                  "key": "location",
+                  "value": "Retreat venue TBD",
+                  "type": "text"
+                },
+                {
+                  "key": "currency",
+                  "value": "USD",
+                  "type": "text",
+                  "description": "ISO currency code (e.g. USD, NGN)"
+                },
+                {
+                  "key": "benefits",
+                  "value": "[\"Pause and reconnect with yourself\",\"Experience guided reflective practices\",\"Build meaningful connections\",\"Gain clarity and emotional balance\"]",
+                  "type": "text",
+                  "description": "JSON array or comma-separated list"
+                },
+                {
+                  "key": "capacity",
+                  "value": "30",
+                  "type": "text",
+                  "description": "Total seats (sum of registration participantCount)"
+                },
+                {
+                  "key": "startDate",
+                  "value": "2026-05-01T08:00:00.000Z",
+                  "type": "text"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2026-05-03T17:00:00.000Z",
+                  "type": "text"
+                },
+                {
+                  "key": "thumbnail",
+                  "type": "file",
+                  "src": "",
+                  "description": "Optional: camp thumbnail image"
+                },
+                {
+                  "key": "category",
+                  "value": "Wellness Retreat",
+                  "type": "text"
+                }
               ]
             },
-            "description": "Admin only. Creates a camp. Add participation tiers for pricing. benefits powers the Why attend list; public camp payloads omit legacy camp.price."
+            "description": "Admin only. Creates a camp. Add participation tiers for pricing. benefits powers the Why attend list; public camp payloads omit legacy camp.price. category is REQUIRED on create and must be a non-empty phrase when present on update (max 80 chars)."
           }
         },
         {
           "name": "[ADMIN] Update Camp",
           "request": {
             "method": "PATCH",
-            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/camps/{{campId}}", "host": ["{{baseUrl}}"], "path": ["api", "camps", "{{campId}}"] },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/camps/{{campId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "camps",
+                "{{campId}}"
+              ]
+            },
             "body": {
               "mode": "formdata",
               "formdata": [
-                { "key": "status", "value": "UPCOMING", "type": "text", "description": "UPCOMING | ONGOING | COMPLETED | CANCELLED" },
-                { "key": "currency", "value": "USD", "type": "text" },
-                { "key": "benefits", "value": "[\"Pause and reconnect with yourself\",\"Experience guided reflective practices\",\"Build meaningful connections\",\"Gain clarity and emotional balance\"]", "type": "text" },
-                { "key": "capacity", "value": "40", "type": "text" }
+                {
+                  "key": "status",
+                  "value": "UPCOMING",
+                  "type": "text",
+                  "description": "UPCOMING | ONGOING | COMPLETED | CANCELLED"
+                },
+                {
+                  "key": "currency",
+                  "value": "USD",
+                  "type": "text"
+                },
+                {
+                  "key": "benefits",
+                  "value": "[\"Pause and reconnect with yourself\",\"Experience guided reflective practices\",\"Build meaningful connections\",\"Gain clarity and emotional balance\"]",
+                  "type": "text"
+                },
+                {
+                  "key": "capacity",
+                  "value": "40",
+                  "type": "text"
+                },
+                {
+                  "key": "category",
+                  "value": "Wellness Retreat",
+                  "type": "text"
+                }
               ]
             },
-            "description": "Admin only. Partial update. Status options: UPCOMING, ONGOING, COMPLETED, CANCELLED. Pricing is managed via tier endpoints; camp.price is not collected."
+            "description": "Admin only. Partial update. Status options: UPCOMING, ONGOING, COMPLETED, CANCELLED. Pricing is managed via tier endpoints; camp.price is not collected. category is REQUIRED on create and must be a non-empty phrase when present on update (max 80 chars)."
           }
         },
         {
           "name": "[ADMIN] Delete Camp",
           "request": {
             "method": "DELETE",
-            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/camps/{{campId}}", "host": ["{{baseUrl}}"], "path": ["api", "camps", "{{campId}}"] },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/camps/{{campId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "camps",
+                "{{campId}}"
+              ]
+            },
             "description": "Admin only. Deletes a camp."
           }
         },
@@ -729,14 +1504,32 @@
           "name": "[ADMIN] Get Camp Participants",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/camps/{{campId}}/participants?page=1&limit=20",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "camps", "{{campId}}", "participants"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "camps",
+                "{{campId}}",
+                "participants"
+              ],
               "query": [
-                { "key": "page", "value": "1" },
-                { "key": "limit", "value": "20" },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
                 {
                   "key": "status",
                   "value": "CONFIRMED",
@@ -767,10 +1560,27 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{authToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
-            "url": { "raw": "{{baseUrl}}/api/camps/{{campId}}/tiers", "host": ["{{baseUrl}}"], "path": ["api", "camps", "{{campId}}", "tiers"] },
+            "url": {
+              "raw": "{{baseUrl}}/api/camps/{{campId}}/tiers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "camps",
+                "{{campId}}",
+                "tiers"
+              ]
+            },
             "body": {
               "mode": "raw",
               "raw": "{\n  \"label\": \"Individual\",\n  \"description\": \"Single attendee\",\n  \"price\": 500,\n  \"inclusions\": [\"Accommodation\", \"Meals\", \"Guided sessions\", \"Community activities\", \"Reflection materials\"],\n  \"seatsPerUnit\": 1,\n  \"maxUnits\": null,\n  \"order\": 0,\n  \"isFeatured\": false\n}"
@@ -783,10 +1593,28 @@
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{authToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
-            "url": { "raw": "{{baseUrl}}/api/camps/{{campId}}/tiers/{{campTierId}}", "host": ["{{baseUrl}}"], "path": ["api", "camps", "{{campId}}", "tiers", "{{campTierId}}"] },
+            "url": {
+              "raw": "{{baseUrl}}/api/camps/{{campId}}/tiers/{{campTierId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "camps",
+                "{{campId}}",
+                "tiers",
+                "{{campTierId}}"
+              ]
+            },
             "body": {
               "mode": "raw",
               "raw": "{\n  \"label\": \"Couple\",\n  \"price\": 750,\n  \"seatsPerUnit\": 2,\n  \"isFeatured\": true,\n  \"order\": 1\n}"
@@ -798,8 +1626,25 @@
           "name": "[ADMIN] Delete Camp Tier",
           "request": {
             "method": "DELETE",
-            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/camps/{{campId}}/tiers/{{campTierId}}", "host": ["{{baseUrl}}"], "path": ["api", "camps", "{{campId}}", "tiers", "{{campTierId}}"] },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/camps/{{campId}}/tiers/{{campTierId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "camps",
+                "{{campId}}",
+                "tiers",
+                "{{campTierId}}"
+              ]
+            },
             "description": "Admin only. Deletes a tier."
           }
         },
@@ -821,14 +1666,44 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/camps/{{campId}}/images", "host": ["{{baseUrl}}"], "path": ["api", "camps", "{{campId}}", "images"] },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/camps/{{campId}}/images",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "camps",
+                "{{campId}}",
+                "images"
+              ]
+            },
             "body": {
               "mode": "formdata",
               "formdata": [
-                { "key": "captions", "value": "[\"Group discussion\",\"Journaling\",\"Walking in nature\",\"Calm conversations\"]", "type": "text", "description": "Optional JSON array aligned with files" },
-                { "key": "images", "type": "file", "src": "", "description": "Repeat field images for multiple uploads (max 12)" },
-                { "key": "images", "type": "file", "src": "" }
+                {
+                  "key": "captions",
+                  "value": "[\"Group discussion\",\"Journaling\",\"Walking in nature\",\"Calm conversations\"]",
+                  "type": "text",
+                  "description": "Optional JSON array aligned with files"
+                },
+                {
+                  "key": "images",
+                  "type": "file",
+                  "src": "",
+                  "description": "Repeat field images for multiple uploads (max 12)"
+                },
+                {
+                  "key": "images",
+                  "type": "file",
+                  "src": ""
+                }
               ]
             },
             "description": "Admin only. Multipart field images (repeat). Optional captions JSON array."
@@ -839,10 +1714,28 @@
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{authToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
-            "url": { "raw": "{{baseUrl}}/api/camps/{{campId}}/images/{{campImageId}}", "host": ["{{baseUrl}}"], "path": ["api", "camps", "{{campId}}", "images", "{{campImageId}}"] },
+            "url": {
+              "raw": "{{baseUrl}}/api/camps/{{campId}}/images/{{campImageId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "camps",
+                "{{campId}}",
+                "images",
+                "{{campImageId}}"
+              ]
+            },
             "body": {
               "mode": "raw",
               "raw": "{\n  \"caption\": \"Walking in nature\",\n  \"order\": 2\n}"
@@ -854,14 +1747,30 @@
           "name": "[ADMIN] Delete Camp Gallery Image",
           "request": {
             "method": "DELETE",
-            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/camps/{{campId}}/images/{{campImageId}}", "host": ["{{baseUrl}}"], "path": ["api", "camps", "{{campId}}", "images", "{{campImageId}}"] },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/camps/{{campId}}/images/{{campImageId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "camps",
+                "{{campId}}",
+                "images",
+                "{{campImageId}}"
+              ]
+            },
             "description": "Admin only. Deletes a gallery image record."
           }
         }
       ]
     },
-
     {
       "name": "💬 Testimonials",
       "item": [
@@ -869,7 +1778,16 @@
           "name": "Get Testimonials (Public)",
           "request": {
             "method": "GET",
-            "url": { "raw": "{{baseUrl}}/api/testimonials", "host": ["{{baseUrl}}"], "path": ["api", "testimonials"] },
+            "url": {
+              "raw": "{{baseUrl}}/api/testimonials",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "testimonials"
+              ]
+            },
             "description": "Published testimonials. Add ?campId={{campId}} to filter by camp."
           }
         },
@@ -877,7 +1795,17 @@
           "name": "Get Testimonial by ID (Public)",
           "request": {
             "method": "GET",
-            "url": { "raw": "{{baseUrl}}/api/testimonials/{{testimonialId}}", "host": ["{{baseUrl}}"], "path": ["api", "testimonials", "{{testimonialId}}"] },
+            "url": {
+              "raw": "{{baseUrl}}/api/testimonials/{{testimonialId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "testimonials",
+                "{{testimonialId}}"
+              ]
+            },
             "description": "Single testimonial by id."
           }
         },
@@ -885,15 +1813,37 @@
           "name": "[ADMIN] Get All Testimonials",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/testimonials/admin/all?campId=&page=1&limit=20",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "testimonials", "admin", "all"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "testimonials",
+                "admin",
+                "all"
+              ],
               "query": [
-                { "key": "campId", "value": "", "description": "optional — filter by camp" },
-                { "key": "page", "value": "1" },
-                { "key": "limit", "value": "20" }
+                {
+                  "key": "campId",
+                  "value": "",
+                  "description": "optional — filter by camp"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
               ]
             },
             "description": "Admin only. Paginated. Optional campId. Response: { data, meta }."
@@ -917,18 +1867,62 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/testimonials", "host": ["{{baseUrl}}"], "path": ["api", "testimonials"] },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/testimonials",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "testimonials"
+              ]
+            },
             "body": {
               "mode": "formdata",
               "formdata": [
-                { "key": "campId", "value": "{{campId}}", "type": "text", "description": "Optional — clear for site-wide" },
-                { "key": "name", "value": "Ifeoma", "type": "text" },
-                { "key": "role", "value": "Camp Participant", "type": "text" },
-                { "key": "quote", "value": "A transformative experience — I left with real clarity and peace.", "type": "text" },
-                { "key": "isPublished", "value": "true", "type": "text" },
-                { "key": "order", "value": "0", "type": "text" },
-                { "key": "avatar", "type": "file", "src": "", "description": "Optional avatar image" }
+                {
+                  "key": "campId",
+                  "value": "{{campId}}",
+                  "type": "text",
+                  "description": "Optional — clear for site-wide"
+                },
+                {
+                  "key": "name",
+                  "value": "Ifeoma",
+                  "type": "text"
+                },
+                {
+                  "key": "role",
+                  "value": "Camp Participant",
+                  "type": "text"
+                },
+                {
+                  "key": "quote",
+                  "value": "A transformative experience — I left with real clarity and peace.",
+                  "type": "text"
+                },
+                {
+                  "key": "isPublished",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "order",
+                  "value": "0",
+                  "type": "text"
+                },
+                {
+                  "key": "avatar",
+                  "type": "file",
+                  "src": "",
+                  "description": "Optional avatar image"
+                }
               ]
             },
             "description": "Admin only. Multipart create with optional avatar file."
@@ -938,14 +1932,42 @@
           "name": "[ADMIN] Update Testimonial",
           "request": {
             "method": "PATCH",
-            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/testimonials/{{testimonialId}}", "host": ["{{baseUrl}}"], "path": ["api", "testimonials", "{{testimonialId}}"] },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/testimonials/{{testimonialId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "testimonials",
+                "{{testimonialId}}"
+              ]
+            },
             "body": {
               "mode": "formdata",
               "formdata": [
-                { "key": "quote", "value": "Updated quote text after editing.", "type": "text" },
-                { "key": "isPublished", "value": "true", "type": "text" },
-                { "key": "avatar", "type": "file", "src": "", "description": "Optional new avatar" }
+                {
+                  "key": "quote",
+                  "value": "Updated quote text after editing.",
+                  "type": "text"
+                },
+                {
+                  "key": "isPublished",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "avatar",
+                  "type": "file",
+                  "src": "",
+                  "description": "Optional new avatar"
+                }
               ]
             },
             "description": "Admin only. Multipart partial update."
@@ -955,14 +1977,28 @@
           "name": "[ADMIN] Delete Testimonial",
           "request": {
             "method": "DELETE",
-            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/testimonials/{{testimonialId}}", "host": ["{{baseUrl}}"], "path": ["api", "testimonials", "{{testimonialId}}"] },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/testimonials/{{testimonialId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "testimonials",
+                "{{testimonialId}}"
+              ]
+            },
             "description": "Admin only. Deletes a testimonial."
           }
         }
       ]
     },
-
     {
       "name": "👥 Team",
       "item": [
@@ -970,7 +2006,16 @@
           "name": "Get Team Members (Public)",
           "request": {
             "method": "GET",
-            "url": { "raw": "{{baseUrl}}/api/team", "host": ["{{baseUrl}}"], "path": ["api", "team"] },
+            "url": {
+              "raw": "{{baseUrl}}/api/team",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "team"
+              ]
+            },
             "description": "Published team members for the Our Team page. Sorted by order, then createdAt."
           }
         },
@@ -978,7 +2023,17 @@
           "name": "Get Team Member by ID (Public)",
           "request": {
             "method": "GET",
-            "url": { "raw": "{{baseUrl}}/api/team/{{teamMemberId}}", "host": ["{{baseUrl}}"], "path": ["api", "team", "{{teamMemberId}}"] },
+            "url": {
+              "raw": "{{baseUrl}}/api/team/{{teamMemberId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "team",
+                "{{teamMemberId}}"
+              ]
+            },
             "description": "Single published team member. Returns 404 if unpublished or missing."
           }
         },
@@ -986,14 +2041,32 @@
           "name": "[ADMIN] Get All Team Members",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/team/admin/all?page=1&limit=20",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "team", "admin", "all"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "team",
+                "admin",
+                "all"
+              ],
               "query": [
-                { "key": "page", "value": "1" },
-                { "key": "limit", "value": "20" }
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
               ]
             },
             "description": "Admin only. Paginated list including unpublished. Response: { data, meta }."
@@ -1017,15 +2090,45 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/team", "host": ["{{baseUrl}}"], "path": ["api", "team"] },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/team",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "team"
+              ]
+            },
             "body": {
               "mode": "formdata",
               "formdata": [
-                { "key": "name", "value": "Oluwatosin SAM-ABEREOLA(PD).", "type": "text" },
-                { "key": "role", "value": "Founder & CEO", "type": "text" },
-                { "key": "isPublished", "value": "true", "type": "text" },
-                { "key": "order", "value": "0", "type": "text" }
+                {
+                  "key": "name",
+                  "value": "Oluwatosin SAM-ABEREOLA(PD).",
+                  "type": "text"
+                },
+                {
+                  "key": "role",
+                  "value": "Founder & CEO",
+                  "type": "text"
+                },
+                {
+                  "key": "isPublished",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "order",
+                  "value": "0",
+                  "type": "text"
+                }
               ]
             },
             "description": "Admin only. Multipart create. Required name, role. Optional isPublished, order. Photo: add form-data key photo (File) when needed — pick a .jpg/.png/.webp file, not a folder. Or omit photo and set photoUrl on PATCH."
@@ -1035,13 +2138,36 @@
           "name": "[ADMIN] Update Team Member",
           "request": {
             "method": "PATCH",
-            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/team/{{teamMemberId}}", "host": ["{{baseUrl}}"], "path": ["api", "team", "{{teamMemberId}}"] },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/team/{{teamMemberId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "team",
+                "{{teamMemberId}}"
+              ]
+            },
             "body": {
               "mode": "formdata",
               "formdata": [
-                { "key": "role", "value": "Founder & CEO", "type": "text" },
-                { "key": "isPublished", "value": "true", "type": "text" }
+                {
+                  "key": "role",
+                  "value": "Founder & CEO",
+                  "type": "text"
+                },
+                {
+                  "key": "isPublished",
+                  "value": "true",
+                  "type": "text"
+                }
               ]
             },
             "description": "Admin only. Multipart partial update. Optional photo — add form-data key photo (File) only when uploading; pick a file, not a folder."
@@ -1051,14 +2177,28 @@
           "name": "[ADMIN] Delete Team Member",
           "request": {
             "method": "DELETE",
-            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/team/{{teamMemberId}}", "host": ["{{baseUrl}}"], "path": ["api", "team", "{{teamMemberId}}"] },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/team/{{teamMemberId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "team",
+                "{{teamMemberId}}"
+              ]
+            },
             "description": "Admin only. Permanent delete."
           }
         }
       ]
     },
-
     {
       "name": "📝 Blog",
       "item": [
@@ -1068,14 +2208,39 @@
             "method": "GET",
             "url": {
               "raw": "{{baseUrl}}/api/blog?search=&category=&page=&limit=",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "blog"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "blog"
+              ],
               "query": [
-                { "key": "search", "value": "", "description": "optional — case-insensitive match on title or excerpt" },
-                { "key": "q", "value": "", "description": "alias for search" },
-                { "key": "category", "value": "", "description": "REFLECTION | WELLBEING | PERSONAL_GROWTH" },
-                { "key": "page", "value": "", "description": "use with limit — if either is set, response includes meta { total, page, limit, totalPages }" },
-                { "key": "limit", "value": "", "description": "max 100; default 20 when only page is set" }
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "optional — case-insensitive match on title or excerpt"
+                },
+                {
+                  "key": "q",
+                  "value": "",
+                  "description": "alias for search"
+                },
+                {
+                  "key": "category",
+                  "value": "",
+                  "description": "REFLECTION | WELLBEING | PERSONAL_GROWTH"
+                },
+                {
+                  "key": "page",
+                  "value": "",
+                  "description": "use with limit — if either is set, response includes meta { total, page, limit, totalPages }"
+                },
+                {
+                  "key": "limit",
+                  "value": "",
+                  "description": "max 100; default 20 when only page is set"
+                }
               ]
             },
             "description": "Public. Published posts only, newest first; each row includes author { id, firstName, lastName } or null when unset. Optional filters: category, search (or q). Omit page & limit to return the full list (no meta). With page or limit, response includes meta pagination."
@@ -1087,9 +2252,19 @@
             "method": "GET",
             "url": {
               "raw": "{{baseUrl}}/api/blog?category=WELLBEING",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "blog"],
-              "query": [{ "key": "category", "value": "WELLBEING" }]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "blog"
+              ],
+              "query": [
+                {
+                  "key": "category",
+                  "value": "WELLBEING"
+                }
+              ]
             },
             "description": "Public. Same as Get All with category query. Change category value as needed."
           }
@@ -1098,7 +2273,17 @@
           "name": "Get Blog Post by Slug (Public)",
           "request": {
             "method": "GET",
-            "url": { "raw": "{{baseUrl}}/api/blog/{{blogSlug}}", "host": ["{{baseUrl}}"], "path": ["api", "blog", "{{blogSlug}}"] },
+            "url": {
+              "raw": "{{baseUrl}}/api/blog/{{blogSlug}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "blog",
+                "{{blogSlug}}"
+              ]
+            },
             "description": "Public. One published post by slug (full body). Includes nested author when linked. 404 if draft. Uses collection variable blogSlug (set by Create requests)."
           }
         },
@@ -1106,18 +2291,52 @@
           "name": "[ADMIN] List All Blog Posts",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/admin/blog?status=&category=&search=&q=&page=1&limit=20",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "admin", "blog"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "blog"
+              ],
               "query": [
-                { "key": "status", "value": "", "description": "all (default) | draft | published" },
-                { "key": "category", "value": "", "description": "optional — REFLECTION | WELLBEING | PERSONAL_GROWTH" },
-                { "key": "search", "value": "", "description": "optional — q works too; title, excerpt, slug" },
-                { "key": "q", "value": "", "description": "alias for search" },
-                { "key": "page", "value": "1" },
-                { "key": "limit", "value": "20", "description": "max 100" }
+                {
+                  "key": "status",
+                  "value": "",
+                  "description": "all (default) | draft | published"
+                },
+                {
+                  "key": "category",
+                  "value": "",
+                  "description": "optional — REFLECTION | WELLBEING | PERSONAL_GROWTH"
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "optional — q works too; title, excerpt, slug"
+                },
+                {
+                  "key": "q",
+                  "value": "",
+                  "description": "alias for search"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "max 100"
+                }
               ]
             },
             "description": "Admin only. Always paginated (default page=1, limit=20). Response: { data, meta }. Each row may include nested author when set."
@@ -1127,8 +2346,24 @@
           "name": "[ADMIN] Get Blog Post by ID",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/admin/blog/{{blogPostId}}", "host": ["{{baseUrl}}"], "path": ["api", "admin", "blog", "{{blogPostId}}"] },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/blog/{{blogPostId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "blog",
+                "{{blogPostId}}"
+              ]
+            },
             "description": "Admin only. Single post by id (draft or published), including nested author when set. Set blogPostId from List or from Create test script."
           }
         },
@@ -1154,18 +2389,62 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/admin/blog", "host": ["{{baseUrl}}"], "path": ["api", "admin", "blog"] },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/blog",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "blog"
+              ]
+            },
             "body": {
               "mode": "formdata",
               "formdata": [
-                { "key": "title", "value": "Learning to Sit With Your Emotions", "type": "text" },
-                { "key": "slug", "value": "learning-to-sit-with-your-emotions", "type": "text", "description": "Optional" },
-                { "key": "excerpt", "value": "Understanding your emotions without rushing to fix them can lead to deeper clarity and lasting growth.", "type": "text" },
-                { "key": "body", "value": "## Intro\n\nFull article body (markdown or HTML).\n\n- Point one\n- Point two", "type": "text" },
-                { "key": "category", "value": "WELLBEING", "type": "text" },
-                { "key": "readTimeMinutes", "value": "5", "type": "text" },
-                { "key": "isPublished", "value": "true", "type": "text" },
+                {
+                  "key": "title",
+                  "value": "Learning to Sit With Your Emotions",
+                  "type": "text"
+                },
+                {
+                  "key": "slug",
+                  "value": "learning-to-sit-with-your-emotions",
+                  "type": "text",
+                  "description": "Optional"
+                },
+                {
+                  "key": "excerpt",
+                  "value": "Understanding your emotions without rushing to fix them can lead to deeper clarity and lasting growth.",
+                  "type": "text"
+                },
+                {
+                  "key": "body",
+                  "value": "## Intro\n\nFull article body (markdown or HTML).\n\n- Point one\n- Point two",
+                  "type": "text"
+                },
+                {
+                  "key": "category",
+                  "value": "WELLBEING",
+                  "type": "text"
+                },
+                {
+                  "key": "readTimeMinutes",
+                  "value": "5",
+                  "type": "text"
+                },
+                {
+                  "key": "isPublished",
+                  "value": "true",
+                  "type": "text"
+                },
                 {
                   "key": "authorId",
                   "value": "{{userId}}",
@@ -1180,8 +2459,17 @@
                   "description": "Optional public byline (alias: authorDisplayName)",
                   "disabled": true
                 },
-                { "key": "coverImageUrl", "value": "", "type": "text" },
-                { "key": "coverImage", "type": "file", "src": "", "description": "Optional cover image" }
+                {
+                  "key": "coverImageUrl",
+                  "value": "",
+                  "type": "text"
+                },
+                {
+                  "key": "coverImage",
+                  "type": "file",
+                  "src": "",
+                  "description": "Optional cover image"
+                }
               ]
             },
             "description": "Admin only. Multipart. Required: title, excerpt, body, category. Optional slug, readTimeMinutes, isPublished, authorId, author/authorDisplayName (byline string), cover image or coverImageUrl."
@@ -1208,18 +2496,61 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/admin/blog", "host": ["{{baseUrl}}"], "path": ["api", "admin", "blog"] },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/blog",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "blog"
+              ]
+            },
             "body": {
               "mode": "formdata",
               "formdata": [
-                { "key": "title", "value": "Why Slowing Down Matters (draft)", "type": "text" },
-                { "key": "slug", "value": "why-slowing-down-matters-draft", "type": "text" },
-                { "key": "excerpt", "value": "In a fast-paced world, creating space to pause can improve clarity.", "type": "text" },
-                { "key": "body", "value": "## Draft\n\nContent not visible on the public blog until published.", "type": "text" },
-                { "key": "category", "value": "PERSONAL_GROWTH", "type": "text" },
-                { "key": "readTimeMinutes", "value": "5", "type": "text" },
-                { "key": "isPublished", "value": "false", "type": "text" },
+                {
+                  "key": "title",
+                  "value": "Why Slowing Down Matters (draft)",
+                  "type": "text"
+                },
+                {
+                  "key": "slug",
+                  "value": "why-slowing-down-matters-draft",
+                  "type": "text"
+                },
+                {
+                  "key": "excerpt",
+                  "value": "In a fast-paced world, creating space to pause can improve clarity.",
+                  "type": "text"
+                },
+                {
+                  "key": "body",
+                  "value": "## Draft\n\nContent not visible on the public blog until published.",
+                  "type": "text"
+                },
+                {
+                  "key": "category",
+                  "value": "PERSONAL_GROWTH",
+                  "type": "text"
+                },
+                {
+                  "key": "readTimeMinutes",
+                  "value": "5",
+                  "type": "text"
+                },
+                {
+                  "key": "isPublished",
+                  "value": "false",
+                  "type": "text"
+                },
                 {
                   "key": "authorId",
                   "value": "{{userId}}",
@@ -1227,8 +2558,16 @@
                   "description": "Optional users.id",
                   "disabled": true
                 },
-                { "key": "coverImageUrl", "value": "", "type": "text" },
-                { "key": "coverImage", "type": "file", "src": "" }
+                {
+                  "key": "coverImageUrl",
+                  "value": "",
+                  "type": "text"
+                },
+                {
+                  "key": "coverImage",
+                  "type": "file",
+                  "src": ""
+                }
               ]
             },
             "description": "Admin only. isPublished false — visible in admin list only until you publish. Optional authorId as on Create Blog Post."
@@ -1238,14 +2577,42 @@
           "name": "[ADMIN] Update Blog Post",
           "request": {
             "method": "PATCH",
-            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/admin/blog/{{blogPostId}}", "host": ["{{baseUrl}}"], "path": ["api", "admin", "blog", "{{blogPostId}}"] },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/blog/{{blogPostId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "blog",
+                "{{blogPostId}}"
+              ]
+            },
             "body": {
               "mode": "formdata",
               "formdata": [
-                { "key": "readTimeMinutes", "value": "7", "type": "text" },
-                { "key": "isPublished", "value": "true", "type": "text" },
-                { "key": "category", "value": "REFLECTION", "type": "text" },
+                {
+                  "key": "readTimeMinutes",
+                  "value": "7",
+                  "type": "text"
+                },
+                {
+                  "key": "isPublished",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "category",
+                  "value": "REFLECTION",
+                  "type": "text"
+                },
                 {
                   "key": "authorId",
                   "value": "{{userId}}",
@@ -1253,7 +2620,12 @@
                   "description": "Enable to set or clear (empty) linked author",
                   "disabled": true
                 },
-                { "key": "coverImage", "type": "file", "src": "", "description": "Optional" }
+                {
+                  "key": "coverImage",
+                  "type": "file",
+                  "src": "",
+                  "description": "Optional"
+                }
               ]
             },
             "description": "Admin only. Partial PATCH (minimal example). Optional authorId — enable and set CUID to attach, empty to clear."
@@ -1263,18 +2635,62 @@
           "name": "[ADMIN] Update Blog Post — Full fields",
           "request": {
             "method": "PATCH",
-            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/admin/blog/{{blogPostId}}", "host": ["{{baseUrl}}"], "path": ["api", "admin", "blog", "{{blogPostId}}"] },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/blog/{{blogPostId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "blog",
+                "{{blogPostId}}"
+              ]
+            },
             "body": {
               "mode": "formdata",
               "formdata": [
-                { "key": "title", "value": "Learning to Sit With Your Emotions (updated title)", "type": "text" },
-                { "key": "excerpt", "value": "Updated excerpt — still about sitting with emotions without rushing to fix them.", "type": "text" },
-                { "key": "body", "value": "## Updated\n\nNew content for the article body. Tables, links, etc.", "type": "text" },
-                { "key": "slug", "value": "learning-to-sit-with-your-emotions", "type": "text" },
-                { "key": "category", "value": "WELLBEING", "type": "text" },
-                { "key": "readTimeMinutes", "value": "8", "type": "text" },
-                { "key": "isPublished", "value": "true", "type": "text" },
+                {
+                  "key": "title",
+                  "value": "Learning to Sit With Your Emotions (updated title)",
+                  "type": "text"
+                },
+                {
+                  "key": "excerpt",
+                  "value": "Updated excerpt — still about sitting with emotions without rushing to fix them.",
+                  "type": "text"
+                },
+                {
+                  "key": "body",
+                  "value": "## Updated\n\nNew content for the article body. Tables, links, etc.",
+                  "type": "text"
+                },
+                {
+                  "key": "slug",
+                  "value": "learning-to-sit-with-your-emotions",
+                  "type": "text"
+                },
+                {
+                  "key": "category",
+                  "value": "WELLBEING",
+                  "type": "text"
+                },
+                {
+                  "key": "readTimeMinutes",
+                  "value": "8",
+                  "type": "text"
+                },
+                {
+                  "key": "isPublished",
+                  "value": "true",
+                  "type": "text"
+                },
                 {
                   "key": "authorId",
                   "value": "{{userId}}",
@@ -1282,7 +2698,11 @@
                   "disabled": true,
                   "description": "Optional users.id"
                 },
-                { "key": "coverImage", "type": "file", "src": "" }
+                {
+                  "key": "coverImage",
+                  "type": "file",
+                  "src": ""
+                }
               ]
             },
             "description": "Admin only. Full PATCH example with title, excerpt, body, slug. Optional authorId row (disabled by default)."
@@ -1292,14 +2712,29 @@
           "name": "[ADMIN] Delete Blog Post",
           "request": {
             "method": "DELETE",
-            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/admin/blog/{{blogPostId}}", "host": ["{{baseUrl}}"], "path": ["api", "admin", "blog", "{{blogPostId}}"] },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/blog/{{blogPostId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "blog",
+                "{{blogPostId}}"
+              ]
+            },
             "description": "Admin only. Permanently deletes the post. Uses blogPostId."
           }
         }
       ]
     },
-
     {
       "name": "📅 Consultations",
       "item": [
@@ -1307,7 +2742,17 @@
           "name": "Get All Services (Public)",
           "request": {
             "method": "GET",
-            "url": { "raw": "{{baseUrl}}/api/consultations/services", "host": ["{{baseUrl}}"], "path": ["api", "consultations", "services"] },
+            "url": {
+              "raw": "{{baseUrl}}/api/consultations/services",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "consultations",
+                "services"
+              ]
+            },
             "description": "Returns all active consultation services. No auth required."
           }
         },
@@ -1315,7 +2760,18 @@
           "name": "Get Service by ID (Public)",
           "request": {
             "method": "GET",
-            "url": { "raw": "{{baseUrl}}/api/consultations/services/{{serviceId}}", "host": ["{{baseUrl}}"], "path": ["api", "consultations", "services", "{{serviceId}}"] },
+            "url": {
+              "raw": "{{baseUrl}}/api/consultations/services/{{serviceId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "consultations",
+                "services",
+                "{{serviceId}}"
+              ]
+            },
             "description": "Returns a single consultation service detail."
           }
         },
@@ -1339,10 +2795,26 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{authToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
-            "url": { "raw": "{{baseUrl}}/api/consultations/book", "host": ["{{baseUrl}}"], "path": ["api", "consultations", "book"] },
+            "url": {
+              "raw": "{{baseUrl}}/api/consultations/book",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "consultations",
+                "book"
+              ]
+            },
             "body": {
               "mode": "raw",
               "raw": "{\n  \"serviceId\": \"{{serviceId}}\",\n  \"preferredDate\": \"2026-04-15T10:00:00.000Z\",\n  \"notes\": \"I'd like to focus on stress management and work-life balance.\"\n}"
@@ -1354,8 +2826,23 @@
           "name": "[USER] Get My Consultations",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/consultations/my", "host": ["{{baseUrl}}"], "path": ["api", "consultations", "my"] },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/consultations/my",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "consultations",
+                "my"
+              ]
+            },
             "description": "Returns all consultations booked by the logged-in user."
           }
         },
@@ -1363,16 +2850,40 @@
           "name": "[ADMIN] Get All Consultations",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/consultations?page=1&limit=20&search=&status=",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "consultations"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "consultations"
+              ],
               "query": [
-                { "key": "page", "value": "1" },
-                { "key": "limit", "value": "20" },
-                { "key": "search", "value": "", "description": "Substring on user first/last/email and service title (case-insensitive). Max 100 chars." },
-                { "key": "status", "value": "", "description": "PENDING | PENDING_PAYMENT | CONFIRMED | CANCELLED | COMPLETED" }
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Substring on user first/last/email and service title (case-insensitive). Max 100 chars."
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "description": "PENDING | PENDING_PAYMENT | CONFIRMED | CANCELLED | COMPLETED"
+                }
               ]
             },
             "description": "Admin only. Paginated. Optional filters: search, status (ConsultationStatus). Response: { data, meta }."
@@ -1383,10 +2894,26 @@
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{authToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
-            "url": { "raw": "{{baseUrl}}/api/consultations/{{consultationId}}", "host": ["{{baseUrl}}"], "path": ["api", "consultations", "{{consultationId}}"] },
+            "url": {
+              "raw": "{{baseUrl}}/api/consultations/{{consultationId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "consultations",
+                "{{consultationId}}"
+              ]
+            },
             "body": {
               "mode": "raw",
               "raw": "{\n  \"status\": \"CONFIRMED\",\n  \"confirmedDate\": \"2026-04-15T10:00:00.000Z\"\n}"
@@ -1414,15 +2941,31 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{authToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
-            "url": { "raw": "{{baseUrl}}/api/consultations/services", "host": ["{{baseUrl}}"], "path": ["api", "consultations", "services"] },
+            "url": {
+              "raw": "{{baseUrl}}/api/consultations/services",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "consultations",
+                "services"
+              ]
+            },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"Personal Wellness Consultation\",\n  \"description\": \"A 60-minute one-on-one session focused on your personal wellness journey.\",\n  \"price\": 15000,\n  \"duration\": 60\n}"
+              "raw": "{\n  \"title\": \"Personal Wellness Consultation\",\n  \"description\": \"A 60-minute one-on-one session focused on your personal wellness journey.\",\n  \"price\": 15000,\n  \"duration\": 60,\n  \"format\": \"1-on-1 video call\",\n  \"audience\": [\n    \"Anyone rebuilding confidence after a career break\"\n  ],\n  \"whatsIncluded\": [\n    \"60-minute private video call\",\n    \"Follow-up summary within 48 hours\"\n  ],\n  \"tags\": [\n    \"Wellness\",\n    \"Career Exploration\"\n  ],\n  \"coverImageUrl\": \"https://res.cloudinary.com/demo/image/upload/cover.jpg\"\n}"
             },
-            "description": "Admin only. Creates a new consultation service offering."
+            "description": "Admin only. Creates a new consultation service offering. Route now accepts multipart/form-data with an optional coverImage file; JSON callers may still send coverImageUrl as a string. format = one FORMAT tag. audience/whatsIncluded = full-sentence bullets. tags = TOPIC pills."
           }
         },
         {
@@ -1430,20 +2973,36 @@
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{authToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
-            "url": { "raw": "{{baseUrl}}/api/consultations/services/{{serviceId}}", "host": ["{{baseUrl}}"], "path": ["api", "consultations", "services", "{{serviceId}}"] },
+            "url": {
+              "raw": "{{baseUrl}}/api/consultations/services/{{serviceId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "consultations",
+                "services",
+                "{{serviceId}}"
+              ]
+            },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"price\": 20000,\n  \"isActive\": true\n}"
+              "raw": "{\n  \"price\": 20000,\n  \"isActive\": true,\n  \"format\": \"1-on-1 video call\",\n  \"audience\": [\n    \"Anyone rebuilding confidence after a career break\"\n  ],\n  \"whatsIncluded\": [\n    \"60-minute private video call\",\n    \"Follow-up summary within 48 hours\"\n  ],\n  \"tags\": [\n    \"Wellness\",\n    \"Career Exploration\"\n  ],\n  \"coverImageUrl\": \"https://res.cloudinary.com/demo/image/upload/cover.jpg\"\n}"
             },
-            "description": "Admin only. Updates a consultation service. Set isActive=false to hide it from users."
+            "description": "Admin only. Updates a consultation service. Set isActive=false to hide it from users. Route now accepts multipart/form-data with an optional coverImage file; JSON callers may still send coverImageUrl as a string. format = one FORMAT tag. audience/whatsIncluded = full-sentence bullets. tags = TOPIC pills."
           }
         }
       ]
     },
-
     {
       "name": "💳 Payments",
       "item": [
@@ -1468,10 +3027,26 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{authToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
-            "url": { "raw": "{{baseUrl}}/api/payments/initialize", "host": ["{{baseUrl}}"], "path": ["api", "payments", "initialize"] },
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/initialize",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "payments",
+                "initialize"
+              ]
+            },
             "body": {
               "mode": "raw",
               "raw": "{\n  \"type\": \"PROGRAM\",\n  \"itemId\": \"{{programId}}\",\n  \"provider\": \"PAYSTACK\",\n  \"currency\": \"NGN\"\n}"
@@ -1500,10 +3075,26 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{authToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
-            "url": { "raw": "{{baseUrl}}/api/payments/initialize", "host": ["{{baseUrl}}"], "path": ["api", "payments", "initialize"] },
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/initialize",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "payments",
+                "initialize"
+              ]
+            },
             "body": {
               "mode": "raw",
               "raw": "{\n  \"type\": \"PROGRAM\",\n  \"itemId\": \"{{programId}}\",\n  \"provider\": \"FLUTTERWAVE\",\n  \"currency\": \"USD\"\n}"
@@ -1516,10 +3107,26 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{authToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
-            "url": { "raw": "{{baseUrl}}/api/payments/initialize", "host": ["{{baseUrl}}"], "path": ["api", "payments", "initialize"] },
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/initialize",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "payments",
+                "initialize"
+              ]
+            },
             "body": {
               "mode": "raw",
               "raw": "{\n  \"type\": \"CAMP\",\n  \"itemId\": \"{{campRegistrationId}}\",\n  \"provider\": \"PAYSTACK\",\n  \"currency\": \"NGN\"\n}"
@@ -1532,10 +3139,26 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{authToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
-            "url": { "raw": "{{baseUrl}}/api/payments/initialize", "host": ["{{baseUrl}}"], "path": ["api", "payments", "initialize"] },
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/initialize",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "payments",
+                "initialize"
+              ]
+            },
             "body": {
               "mode": "raw",
               "raw": "{\n  \"type\": \"CAMP\",\n  \"itemId\": \"{{campRegistrationId}}\",\n  \"provider\": \"FLUTTERWAVE\",\n  \"currency\": \"USD\"\n}"
@@ -1548,10 +3171,26 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{authToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
-            "url": { "raw": "{{baseUrl}}/api/payments/initialize", "host": ["{{baseUrl}}"], "path": ["api", "payments", "initialize"] },
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/initialize",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "payments",
+                "initialize"
+              ]
+            },
             "body": {
               "mode": "raw",
               "raw": "{\n  \"type\": \"CONSULTATION\",\n  \"itemId\": \"{{consultationId}}\",\n  \"provider\": \"PAYSTACK\",\n  \"currency\": \"NGN\"\n}"
@@ -1564,10 +3203,26 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{authToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
-            "url": { "raw": "{{baseUrl}}/api/payments/initialize", "host": ["{{baseUrl}}"], "path": ["api", "payments", "initialize"] },
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/initialize",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "payments",
+                "initialize"
+              ]
+            },
             "body": {
               "mode": "raw",
               "raw": "{\n  \"type\": \"CONSULTATION\",\n  \"itemId\": \"{{consultationId}}\",\n  \"provider\": \"FLUTTERWAVE\",\n  \"currency\": \"USD\"\n}"
@@ -1579,7 +3234,18 @@
           "name": "Verify Payment",
           "request": {
             "method": "GET",
-            "url": { "raw": "{{baseUrl}}/api/payments/verify/{{paymentRef}}", "host": ["{{baseUrl}}"], "path": ["api", "payments", "verify", "{{paymentRef}}"] },
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/verify/{{paymentRef}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "payments",
+                "verify",
+                "{{paymentRef}}"
+              ]
+            },
             "description": "Check the status of a payment by its reference. Called by the frontend after Paystack redirects back."
           }
         },
@@ -1587,14 +3253,30 @@
           "name": "[ADMIN] Get All Payments",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/payments?page=1&limit=20",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "payments"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "payments"
+              ],
               "query": [
-                { "key": "page", "value": "1" },
-                { "key": "limit", "value": "20" }
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
               ]
             },
             "description": "Admin only. Paginated. Response: { data, meta }."
@@ -1605,10 +3287,27 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-paystack-signature", "value": "COMPUTED_HMAC_SHA512_SIGNATURE", "description": "In production this is sent by Paystack automatically. For local testing use Paystack CLI." }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-paystack-signature",
+                "value": "COMPUTED_HMAC_SHA512_SIGNATURE",
+                "description": "In production this is sent by Paystack automatically. For local testing use Paystack CLI."
+              }
             ],
-            "url": { "raw": "{{baseUrl}}/api/payments/webhook", "host": ["{{baseUrl}}"], "path": ["api", "payments", "webhook"] },
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/webhook",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "payments",
+                "webhook"
+              ]
+            },
             "body": {
               "mode": "raw",
               "raw": "{\n  \"event\": \"charge.success\",\n  \"data\": {\n    \"reference\": \"{{paymentRef}}\",\n    \"amount\": 2500000,\n    \"status\": \"success\",\n    \"metadata\": {\n      \"userId\": \"USER_ID_HERE\",\n      \"type\": \"PROGRAM\",\n      \"itemId\": \"PROGRAM_ID_HERE\"\n    },\n    \"customer\": {\n      \"email\": \"john@example.com\"\n    }\n  }\n}"
@@ -1621,10 +3320,27 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "verif-hash", "value": "{{flutterwaveWebhookHash}}", "description": "Must equal FLUTTERWAVE_WEBHOOK_HASH on the server. Set in Flutterwave dashboard → Settings → Webhooks." }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "verif-hash",
+                "value": "{{flutterwaveWebhookHash}}",
+                "description": "Must equal FLUTTERWAVE_WEBHOOK_HASH on the server. Set in Flutterwave dashboard → Settings → Webhooks."
+              }
             ],
-            "url": { "raw": "{{baseUrl}}/api/payments/flutterwave-webhook", "host": ["{{baseUrl}}"], "path": ["api", "payments", "flutterwave-webhook"] },
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/flutterwave-webhook",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "payments",
+                "flutterwave-webhook"
+              ]
+            },
             "body": {
               "mode": "raw",
               "raw": "{\n  \"event\": \"charge.completed\",\n  \"data\": {\n    \"id\": 285959875,\n    \"tx_ref\": \"{{paymentRef}}\",\n    \"flw_ref\": \"FLW-MOCK-REF\",\n    \"amount\": 25000,\n    \"currency\": \"NGN\",\n    \"status\": \"successful\",\n    \"customer\": {\n      \"email\": \"john@example.com\"\n    },\n    \"meta\": {\n      \"userId\": \"USER_ID_HERE\",\n      \"type\": \"PROGRAM\",\n      \"itemId\": \"PROGRAM_ID_HERE\"\n    }\n  }\n}"
@@ -1634,7 +3350,6 @@
         }
       ]
     },
-
     {
       "name": "📊 User Dashboard",
       "item": [
@@ -1642,8 +3357,22 @@
           "name": "Get My Dashboard",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/dashboard", "host": ["{{baseUrl}}"], "path": ["api", "dashboard"] },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dashboard"
+              ]
+            },
             "description": "Returns purchases (successful programme purchases include progress rollup), camp registrations (status, paymentExpiresAt, payment.status/amount/createdAt for countdown CTAs), and consultations."
           }
         },
@@ -1651,8 +3380,24 @@
           "name": "Access Program Content",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/dashboard/programs/{{programId}}", "host": ["{{baseUrl}}"], "path": ["api", "dashboard", "programs", "{{programId}}"] },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard/programs/{{programId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dashboard",
+                "programs",
+                "{{programId}}"
+              ]
+            },
             "description": "Purchased programme only. Full week/module tree plus `completedAt` per module and root `progress` rollup. 403 if not purchased."
           }
         },
@@ -1660,11 +3405,26 @@
           "name": "Mark module complete (progress)",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/dashboard/programs/{{programId}}/modules/{{programModuleId}}/complete",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "dashboard", "programs", "{{programId}}", "modules", "{{programModuleId}}", "complete"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dashboard",
+                "programs",
+                "{{programId}}",
+                "modules",
+                "{{programModuleId}}",
+                "complete"
+              ]
             },
             "description": "Call when the learner finishes a module (e.g. video ended, quiz submitted). Idempotent. Returns updated `ProgramProgressOverview`. Sets `purchase.programCompletedAt` when 100% modules done."
           }
@@ -1674,13 +3434,26 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{authToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/dashboard/support/contact",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "dashboard", "support", "contact"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dashboard",
+                "support",
+                "contact"
+              ]
             },
             "body": {
               "mode": "raw",
@@ -1694,13 +3467,27 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{authToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/dashboard/programs/{{programId}}/contact-facilitator",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "dashboard", "programs", "{{programId}}", "contact-facilitator"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dashboard",
+                "programs",
+                "{{programId}}",
+                "contact-facilitator"
+              ]
             },
             "body": {
               "mode": "raw",
@@ -1711,7 +3498,6 @@
         }
       ]
     },
-
     {
       "name": "💬 Chat",
       "item": [
@@ -1722,8 +3508,14 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/chat/config",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "chat", "config"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "chat",
+                "config"
+              ]
             },
             "description": "Public widget bootstrap — intro, disclaimers, suggested prompts, and streaming flag."
           }
@@ -1750,8 +3542,14 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/chat/sessions",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "chat", "sessions"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "chat",
+                "sessions"
+              ]
             },
             "description": "Creates a chat session and sets httpOnly cookies `chat_session` and `chat_session_token`. Enable Postman cookie jar for follow-up requests. Saves `chatSessionId` from the response."
           }
@@ -1763,8 +3561,15 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/chat/sessions/{{chatSessionId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "chat", "sessions", "{{chatSessionId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "chat",
+                "sessions",
+                "{{chatSessionId}}"
+              ]
             },
             "description": "Requires session cookies from Create Chat Session. Uses `chatSessionId` saved by that request."
           }
@@ -1773,15 +3578,28 @@
           "name": "Send Chat Message",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"message\": \"What programs do you offer?\",\n  \"stream\": false\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/chat/sessions/{{chatSessionId}}/messages",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "chat", "sessions", "{{chatSessionId}}", "messages"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "chat",
+                "sessions",
+                "{{chatSessionId}}",
+                "messages"
+              ]
             },
             "description": "Send a user message (JSON response). Requires session cookies from Create Chat Session. Run `npm run chat:reindex` after deploy so RAG has indexed content."
           }
@@ -1790,11 +3608,23 @@
           "name": "[ADMIN] Reindex Chat Knowledge",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/admin/chat/reindex",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "admin", "chat", "reindex"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "chat",
+                "reindex"
+              ]
             },
             "description": "Full rebuild of chat knowledge index (programs, camps, consultations, blogs, testimonials, platform policy doc). Requires admin JWT."
           }
@@ -1803,18 +3633,389 @@
           "name": "[ADMIN] Get Chat Stats",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/admin/chat/stats",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "admin", "chat", "stats"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "chat",
+                "stats"
+              ]
             },
             "description": "Chunk counts, last indexed time, and month-to-date OpenAI usage estimate."
           }
         }
       ]
     },
-
+    {
+      "name": "🏷️ Tags",
+      "item": [
+        {
+          "name": "Get All Tags",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/tags",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tags"
+              ]
+            },
+            "description": "Shared tag vocabulary across programs, consultations and communities. Tags are created on demand when an unknown name is passed on a create/update — there is no create-tag endpoint."
+          }
+        },
+        {
+          "name": "Get Tags by Type (TOPIC)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/tags?type=TOPIC",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tags"
+              ]
+            },
+            "description": "Short reusable pills. Feeds the admin autocomplete."
+          }
+        },
+        {
+          "name": "Get Tags by Type (FORMAT)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/tags?type=FORMAT",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tags"
+              ]
+            },
+            "description": "Consultation delivery formats. Exactly one per service."
+          }
+        },
+        {
+          "name": "Search Tags",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/tags?type=TOPIC&search=car",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tags"
+              ]
+            },
+            "description": "Case-insensitive substring match on tag name."
+          }
+        }
+      ]
+    },
+    {
+      "name": "🤝 Communities",
+      "item": [
+        {
+          "name": "Get Communities (Public)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/communities",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "communities"
+              ]
+            },
+            "description": "Published communities, ordered. IMPORTANT: whatsappLink is stripped from this response — it is emailed to applicants only."
+          }
+        },
+        {
+          "name": "Get Community by Slug (Public)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/communities/{{communitySlug}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "communities",
+                "{{communitySlug}}"
+              ]
+            },
+            "description": "Accepts a cuid or a slug. whatsappLink is stripped."
+          }
+        },
+        {
+          "name": "Join Community (Public)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/communities/{{communitySlug}}/join",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "communities",
+                "{{communitySlug}}",
+                "join"
+              ]
+            },
+            "description": "Anonymous application. Saves the request and emails the WhatsApp invite immediately. Always 201 when the application is saved; data.emailed tells you whether the email actually went out. Rate limited to 10 per 15 min. 'website' is a honeypot — leave it empty.",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
+              "raw": "{\n  \"fullName\": \"Jane Doe\",\n  \"email\": \"jane@example.com\",\n  \"phone\": \"+2348012345678\",\n  \"reason\": \"I want to explore portfolio careers.\",\n  \"agreedToPolicy\": true,\n  \"website\": \"\"\n}"
+            }
+          }
+        },
+        {
+          "name": "[ADMIN] Get All Communities",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/communities/admin/all?page=1&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "communities",
+                "admin",
+                "all"
+              ]
+            },
+            "description": "Paginated. Unlike the public route, this DOES include whatsappLink.",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "[ADMIN] Get Community by ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/communities/admin/{{communityId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "communities",
+                "admin",
+                "{{communityId}}"
+              ]
+            },
+            "description": "Includes whatsappLink.",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "[ADMIN] Create Community",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/communities",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "communities"
+              ]
+            },
+            "description": "JSON body. whatsappLink is required and must be an https URL. Unknown tag names are created automatically. Slug is derived from the title unless one is supplied.",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
+              "raw": "{\n  \"title\": \"The Generalist Pathfinders\",\n  \"subtitle\": \"A supportive space for multi-passionate individuals exploring diverse paths.\",\n  \"description\": \"Discover your strengths across multiple disciplines and build a portfolio career.\",\n  \"gains\": [\n    \"Weekly exploration sessions across career paths\",\n    \"Strength-mapping workshops to identify transferable skills\"\n  ],\n  \"iconKey\": \"generalist-pathfinders\",\n  \"whatsappLink\": \"https://chat.whatsapp.com/EXAMPLE123\",\n  \"tags\": [\n    \"Career Exploration\",\n    \"Portfolio Careers\",\n    \"Self-Discovery\"\n  ],\n  \"isPublished\": true,\n  \"order\": 0\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.id) {",
+                  "  pm.collectionVariables.set('communityId', res.data.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[ADMIN] Update Community",
+          "request": {
+            "method": "PATCH",
+            "url": {
+              "raw": "{{baseUrl}}/api/communities/{{communityId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "communities",
+                "{{communityId}}"
+              ]
+            },
+            "description": "Partial update. Omit a field to keep it. gains/tags replace the whole list. whatsappLink cannot be cleared — a community without one cannot fulfil a join request.",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
+              "raw": "{\n  \"subtitle\": \"An updated subtitle.\",\n  \"tags\": [\n    \"Career Exploration\",\n    \"Mentorship\"\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "[ADMIN] Delete Community",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/communities/{{communityId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "communities",
+                "{{communityId}}"
+              ]
+            },
+            "description": "Cascades tags and join requests.",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "[ADMIN] Get Join Requests",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/communities/admin/join-requests?page=1&limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "communities",
+                "admin",
+                "join-requests"
+              ]
+            },
+            "description": "All applications. Optional ?communityId= and ?search= (name/email/phone). linkEmailedAt null means delivery failed — see emailError and use Resend.",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "[ADMIN] Resend Join Invite",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/communities/admin/join-requests/{{joinRequestId}}/resend",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "communities",
+                "admin",
+                "join-requests",
+                "{{joinRequestId}}",
+                "resend"
+              ]
+            },
+            "description": "Retries a failed invite. Returns 502 if the mail server is still unreachable.",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ]
+          }
+        }
+      ]
+    },
     {
       "name": "⚙️ Admin",
       "item": [
@@ -1822,8 +4023,23 @@
           "name": "Get Dashboard Stats",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/admin/stats", "host": ["{{baseUrl}}"], "path": ["api", "admin", "stats"] },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/stats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "stats"
+              ]
+            },
             "description": "Admin only. Returns platform overview: total users, programs, camps, consultations, total revenue, and recent payments."
           }
         },
@@ -1831,14 +4047,31 @@
           "name": "Get All Users",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/admin/users?page=1&limit=20&search=",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "admin", "users"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users"
+              ],
               "query": [
-                { "key": "page", "value": "1" },
-                { "key": "limit", "value": "20" },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
                 {
                   "key": "search",
                   "value": "",
@@ -1853,8 +4086,24 @@
           "name": "Get User by ID",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/admin/users/{{userId}}", "host": ["{{baseUrl}}"], "path": ["api", "admin", "users", "{{userId}}"] },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/users/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users",
+                "{{userId}}"
+              ]
+            },
             "description": "Admin only. Full user profile including all purchases, camp registrations, consultations, and payment history."
           }
         },
@@ -1862,11 +4111,23 @@
           "name": "Get Cal.com event types",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/admin/cal/event-types?page=1&limit=20",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "admin", "cal", "event-types"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "cal",
+                "event-types"
+              ],
               "query": [
                 {
                   "key": "username",
@@ -1874,8 +4135,15 @@
                   "description": "Optional. Cal.com username to scope event types (see Cal API).",
                   "disabled": true
                 },
-                { "key": "page", "value": "1", "description": "slices the fetched Cal.com list" },
-                { "key": "limit", "value": "20" }
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "slices the fetched Cal.com list"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
               ]
             },
             "description": "Admin only. Fetches from Cal.com then paginates in memory. Response: { data, meta }."
@@ -1885,11 +4153,22 @@
           "name": "[ADMIN] Get Platform Settings",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/admin/settings",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "admin", "settings"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "settings"
+              ]
             },
             "description": "Admin only. Singleton platform config for the dashboard Settings UI: general (name, support email, timezone, currency), features (maintenance, registration, verification, auto-enrollment), and emailNotificationsEnabled.\nNote: maintenanceMode is stored for the frontend; APIs are not hard-blocked unless you add middleware.\nCurrency enum: NGN | USD | EUR | GBP.\nenforcements: allowUserRegistration blocks email+Google signup; requireEmailVerification blocks dashboard/program content, payments, camp register, consultations list except admins; emailNotificationsEnabled=false skips outbound mail via sendMail."
           }
@@ -1899,10 +4178,27 @@
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{authToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
-            "url": { "raw": "{{baseUrl}}/api/admin/settings/general", "host": ["{{baseUrl}}"], "path": ["api", "admin", "settings", "general"] },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/settings/general",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "settings",
+                "general"
+              ]
+            },
             "body": {
               "mode": "raw",
               "raw": "{\n  \"platformName\": \"Sit With PD\",\n  \"supportEmail\": \"support@sitwithpd.com\",\n  \"defaultTimezone\": \"Africa/Lagos\",\n  \"currency\": \"NGN\"\n}"
@@ -1915,13 +4211,26 @@
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{authToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/admin/settings/features",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "admin", "settings", "features"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "settings",
+                "features"
+              ]
             },
             "body": {
               "mode": "raw",
@@ -1935,13 +4244,26 @@
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{authToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/admin/settings/notifications",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "admin", "settings", "notifications"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "settings",
+                "notifications"
+              ]
             },
             "body": {
               "mode": "raw",
@@ -1952,6 +4274,5 @@
         }
       ]
     }
-
   ]
 }

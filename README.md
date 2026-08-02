@@ -53,10 +53,10 @@ Health check: `http://localhost:5000/health`
 ### Programs — `/api/programs`
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
-| GET | `/` | Public | List all programs |
-| GET | `/:id` | Public | Program detail |
-| POST | `/` | Admin | Create program |
-| PATCH | `/:id` | Admin | Update program |
+| GET | `/` | Public | List all programs (incl. `audience`, `tags`) |
+| GET | `/:id` | Public | Program detail (incl. `audience`, `tags`) |
+| POST | `/` | Admin | Create program — accepts `audience` (bullets) and `tags` (names) |
+| PATCH | `/:id` | Admin | Update program — omit a field to keep it, send `[]` to clear |
 | DELETE | `/:id` | Admin | Delete program |
 | POST | `/:id/lessons` | Admin | Add lesson |
 | PATCH | `/:id/lessons/:lessonId` | Admin | Update lesson |
@@ -70,8 +70,8 @@ Health check: `http://localhost:5000/health`
 | GET | `/:id` | Public | Camp detail |
 | POST | `/:id/register` | User | Apply for camp (`tierId` required); creates `PENDING_PAYMENT` + `paymentExpiresAt` (~60 min) or resets an expired row — see **Camp registration lifecycle** below |
 | GET | `/:id/my-registration` | User | Current user's registration for this camp (`status`, `paymentExpiresAt`, tier, payment) or `null` |
-| POST | `/` | Admin | Create camp (pricing via **Create tier** only) |
-| PATCH | `/:id` | Admin | Update camp (pricing via tier endpoints) |
+| POST | `/` | Admin | Create camp (pricing via **Create tier** only); **`category` is required** |
+| PATCH | `/:id` | Admin | Update camp (pricing via tier endpoints); `category` must be non-empty when present |
 | DELETE | `/:id` | Admin | Delete camp |
 | GET | `/:id/participants` | Admin | Paginated registrants — **all** lifecycle statuses by default; optional `?status=` filter |
 
@@ -84,14 +84,61 @@ Health check: `http://localhost:5000/health`
 ### Consultations — `/api/consultations`
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
-| GET | `/services` | Public | List services |
-| GET | `/services/:id` | Public | Service detail |
+| GET | `/services` | Public | List services (incl. `coverImageUrl`, `audience`, `whatsIncluded`, `format`, `tags`) |
+| GET | `/services/:id` | Public | Service detail (same shape) |
 | POST | `/book` | User | Book consultation |
 | GET | `/my` | User | My bookings |
 | GET | `/` | Admin | All bookings |
 | PATCH | `/:id` | Admin | Update booking |
-| POST | `/services` | Admin | Create service |
-| PATCH | `/services/:id` | Admin | Update service |
+| POST | `/services` | Admin | Create service — **`multipart/form-data`**, optional `coverImage` file |
+| PATCH | `/services/:id` | Admin | Update service — same; JSON callers may pass `coverImageUrl` as a string |
+
+### Tags — `/api/tags`
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/` | Public | Shared tag vocabulary; optional `?type=TOPIC\|FORMAT` and `?search=` |
+
+Tags are **created on demand**. Passing a name that doesn't exist yet on a
+program / consultation / community create or update adds it to the vocabulary
+rather than erroring — there is no separate "create tag" endpoint. Tags are
+deduped by a normalised slug scoped to their type, so `Wellness` can exist as
+both a `TOPIC` and a `FORMAT` without colliding.
+
+Two shapes, deliberately distinct:
+- **`tags`** (`TOPIC`) — short reusable pills, many per entity, shared vocabulary.
+- **`audience` / `whatsIncluded` / `gains`** — full-sentence bullets written per
+  entity. Plain `String[]` columns, not tags, and never shared.
+- **`format`** (`FORMAT`) — exactly one per consultation service, via FK.
+
+### Communities — `/api/communities`
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/` | Public | Published communities — **`whatsappLink` is stripped** |
+| GET | `/:idOrSlug` | Public | Community detail by cuid or slug — link stripped |
+| POST | `/:idOrSlug/join` | Public | Apply to join; saves the request and **emails the group link immediately**. Rate limited to 10 / 15 min, honeypot `website` field |
+| GET | `/admin/all` | Admin | Paginated list **including** `whatsappLink` |
+| GET | `/admin/:id` | Admin | Detail including `whatsappLink` |
+| POST | `/` | Admin | Create community |
+| PATCH | `/:id` | Admin | Update community |
+| DELETE | `/:id` | Admin | Delete (cascades tags + join requests) |
+| GET | `/admin/join-requests` | Admin | Paginated applications; `?communityId=`, `?search=` |
+| POST | `/admin/join-requests/:id/resend` | Admin | Retry a failed invite delivery |
+
+#### Community join lifecycle
+- Joining is **anonymous** — no account required. `agreedToPolicy` must be true.
+- One row per `(communityId, email)`. Re-applying **updates** the existing row
+  instead of sending the invite again.
+- The invite send is best-effort: the application is always saved and the
+  endpoint always returns 201. `linkEmailedAt` is set on success; on failure it
+  stays null, `emailError` records why, and the response carries
+  `data.emailed: false` so the UI can say "we'll send it shortly" rather than
+  promising an inbox. Admins retry via the resend endpoint.
+
+> **`whatsappLink` is a secret.** It is the entire value of a membership —
+> anyone holding it can join without applying. It is stripped from every public
+> response by `toPublicCommunity()` and is deliberately **excluded from the chat
+> knowledge index** (see `community.extractor.ts`), because retrieved RAG chunks
+> are pasted into the model prompt and would be handed to any visitor who asked.
 
 ### Payments — `/api/payments`
 | Method | Endpoint | Auth | Description |
@@ -153,14 +200,34 @@ Change these immediately in production.
 
 ---
 
+## Local database replica (Docker)
+
+Migrations require the **pgvector** extension, so a stock `postgres` image will
+fail on `CREATE EXTENSION vector`. Use the pgvector image:
+
+```bash
+docker run -d --name swpd-db -e POSTGRES_PASSWORD=dev -e POSTGRES_DB=swpd \
+  -p 55432:5432 pgvector/pgvector:pg17
+
+DATABASE_URL="postgresql://postgres:dev@localhost:55432/swpd" npx prisma migrate deploy
+DATABASE_URL="postgresql://postgres:dev@localhost:55432/swpd" npm run db:seed
+```
+
+Pass `DATABASE_URL` inline (or via a separate env file) so the real `.env` is
+never pointed at the throwaway database by accident.
+
+---
+
 ## Folder Structure
 ```
 src/
 ├── config/          # Prisma, Cloudinary, OpenAI/chat config
 ├── controllers/     # Route handler logic
 ├── data/            # Static chat platform knowledge (RAG policy doc)
+├── lib/             # Serializers (tags, community, camp), pagination, gateways
 ├── middleware/      # Auth, error handling, file uploads
 ├── routes/          # Express route definitions
+├── services/        # Tags, communities, camp inventory, platform settings
 ├── services/chat/   # RAG indexing, orchestration, safety
 ├── utils/           # Email service
 ├── types/           # TypeScript types
