@@ -177,8 +177,8 @@ model Program {
   hoursPerWeek     Float?
   certificateLabel String?
   learningOutcomes String[] // Program-level learning objectives (Step 2 of form)
-  /// "Who's this for" — full-sentence bullets written per program (not tags).
   audience         String[]
+  videoLinks       String[]
   startDate        DateTime?
   facilitatorName  String?
   facilitatorEmail String?
@@ -519,12 +519,10 @@ model Community {
   slug         String   @unique
   subtitle     String
   description  String
-  /// "What You'll Gain" bullet list.
   gains        String[]
+  videoLinks   String[]
   /// Key into the frontend pd-icons map (e.g. "stewardship"). Not an image URL.
   iconKey      String?
-  /// SECRET. Emailed to applicants; never included in a public API response and
-  /// never indexed into the chat knowledge base. See toPublicCommunity().
   whatsappLink String
   isPublished  Boolean  @default(true)
   order        Int      @default(0)
