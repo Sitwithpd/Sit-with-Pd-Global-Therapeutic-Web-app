@@ -5,6 +5,7 @@ import { buildMeta, parseAdminPagination } from '../lib/pagination';
 import { mapForeignKeyDeleteError } from '../lib/prismaDeleteErrors';
 import { toPublicCommunityWithTags } from '../lib/communitySerialization';
 import { withSerializedTags } from '../lib/serializeTags';
+import { parseVideoLinks } from '../lib/youtubeLinks';
 import { catchAsync, AppError } from '../middleware/error.middleware';
 import { AuthRequest } from '../types';
 import { syncCommunityTags } from '../services/tag.service';
@@ -169,6 +170,8 @@ export const createCommunity = catchAsync(async (req: AuthRequest, res: Response
   const whatsappLink = parseWhatsappLink(req.body?.whatsappLink, true)!;
   const iconKey = optionalText(req.body?.iconKey, 'iconKey', COMMUNITY_ICON_KEY_MAX) ?? null;
   const gains = parseGains(req.body?.gains);
+  // YouTube media embeds; array order is the display order.
+  const videoLinks = parseVideoLinks(req.body?.videoLinks);
   const slug = await buildUniqueSlug(
     typeof req.body?.slug === 'string' && req.body.slug.trim() ? req.body.slug : title
   );
@@ -180,6 +183,7 @@ export const createCommunity = catchAsync(async (req: AuthRequest, res: Response
       subtitle,
       description,
       gains,
+      videoLinks,
       iconKey,
       whatsappLink,
       isPublished: parseBooleanFlag(req.body?.isPublished, true),
@@ -231,6 +235,10 @@ export const updateCommunity = catchAsync(async (req: AuthRequest, res: Response
   }
   if (req.body?.gains !== undefined) {
     data.gains = { set: parseGains(req.body.gains) };
+  }
+  // Replacing the whole list is also how the admin reorders the embeds.
+  if (req.body?.videoLinks !== undefined) {
+    data.videoLinks = { set: parseVideoLinks(req.body.videoLinks) };
   }
   if (req.body?.isPublished !== undefined) {
     data.isPublished = parseBooleanFlag(req.body.isPublished, true);

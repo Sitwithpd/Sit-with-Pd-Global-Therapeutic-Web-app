@@ -7,6 +7,7 @@ import { buildMeta, parseAdminPagination } from '../lib/pagination';
 import { catchAsync, AppError } from '../middleware/error.middleware';
 import { AuthRequest } from '../types';
 import { tagJoinInclude, withSerializedTags } from '../lib/serializeTags';
+import { parseVideoLinks } from '../lib/youtubeLinks';
 import { syncProgramTags } from '../services/tag.service';
 import {
   scheduleChatDeleteProgram,
@@ -184,6 +185,7 @@ export const getAllPrograms = catchAsync(async (req: Request, res: Response) => 
       certificateLabel: true,
       learningOutcomes: true,
       audience: true,
+      videoLinks: true,
       isPublished: true,
       startDate: true,
       facilitatorName: true,
@@ -342,6 +344,8 @@ export const createProgram = catchAsync(async (req: Request, res: Response) => {
   );
   // "Who's this for" — full-sentence bullets, same input handling as outcomes.
   const audience = parseStringArray(req.body.audience, 'audience');
+  // YouTube media embeds; array order is the display order.
+  const videoLinks = parseVideoLinks(req.body.videoLinks);
   const parsedCategory = parseCategory(category) ?? ProgramCategory.LEADERS;
   const parsedCurrency = parsePlatformCurrency(currency);
 
@@ -382,6 +386,7 @@ export const createProgram = catchAsync(async (req: Request, res: Response) => {
       thumbnail,
       learningOutcomes,
       audience,
+      videoLinks,
       ...(optionalString(certificateLabel) !== undefined && {
         certificateLabel: optionalString(certificateLabel),
       }),
@@ -524,6 +529,10 @@ export const updateProgram = catchAsync(async (req: Request, res: Response) => {
     // Omit to keep; send [] (or '') to clear.
     ...(req.body.audience !== undefined && {
       audience: { set: parseStringArray(req.body.audience, 'audience') },
+    }),
+    // Replacing the whole list is also how the admin reorders the embeds.
+    ...(req.body.videoLinks !== undefined && {
+      videoLinks: { set: parseVideoLinks(req.body.videoLinks) },
     }),
   };
 
