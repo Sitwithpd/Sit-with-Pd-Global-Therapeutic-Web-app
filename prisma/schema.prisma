@@ -95,6 +95,17 @@ enum ChatKnowledgeSourceType {
   BLOG
   POLICY
   TESTIMONIAL
+  COMMUNITY
+}
+
+// Short reusable keyword pills shown on programs, consultations and communities.
+// TOPIC  — the "Popular Topics" chips (many per entity).
+// FORMAT — a consultation's delivery format (exactly one per service, via FK).
+// Tags are created on demand: passing an unknown name on create/update adds it
+// to the shared vocabulary rather than erroring. See src/services/tag.service.ts.
+enum TagType {
+  TOPIC
+  FORMAT
 }
 
 model PlatformSettings {
@@ -166,6 +177,8 @@ model Program {
   hoursPerWeek     Float?
   certificateLabel String?
   learningOutcomes String[] // Program-level learning objectives (Step 2 of form)
+  /// "Who's this for" — full-sentence bullets written per program (not tags).
+  audience         String[]
   startDate        DateTime?
   facilitatorName  String?
   facilitatorEmail String?
@@ -175,6 +188,7 @@ model Program {
   // Three-level hierarchy: Program → Week → Module
   weeks     ProgramWeek[]
   purchases Purchase[]
+  tags      ProgramTag[]
 
   @@map("programs")
 }
@@ -260,6 +274,9 @@ model Camp {
   // Legacy column; unused for new camps. Pricing is defined only on CampTier — APIs omit this field from camp payloads.
   price       Float?
   currency    PlatformCurrency @default(USD)
+  /// Single free-text phrase (e.g. "Wellness Retreat"). Required by the API on
+  /// create, but nullable here so pre-existing camp rows migrate without a backfill.
+  category    String?
   capacity    Int // Total seats across all tiers (sum of registration.participantCount must not exceed this)
   startDate   DateTime
   endDate     DateTime
@@ -406,14 +423,145 @@ model ConsultationService {
   duration       Int
   calEventTypeId Int?
   calBookingUrl  String?
+  /// Hero image for the service card (Cloudinary URL).
+  coverImageUrl  String?
+  /// "Who's it for" — full-sentence bullets written per service (not tags).
+  audience       String[]
+  /// "What's included" — full-sentence bullets written per service (not tags).
+  whatsIncluded  String[]
+  /// Delivery format ("1-on-1 video call"). One per service, drawn from the
+  /// shared FORMAT tag vocabulary so the admin dropdown stays consistent.
+  formatTagId    String?
   isActive       Boolean  @default(true)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
   consultations Consultation[]
+  formatTag     Tag?                     @relation("ConsultationServiceFormat", fields: [formatTagId], references: [id], onDelete: SetNull)
+  tags          ConsultationServiceTag[]
 
   @@unique([calEventTypeId])
+  @@index([formatTagId])
   @@map("consultation_services")
+}
+
+// ── Tags (shared vocabulary) ──────────────────────────────────────────────────
+
+model Tag {
+  id        String   @id @default(cuid())
+  /// Display text as first written, e.g. "Career Exploration".
+  name      String
+  /// Normalised dedupe key derived from `name`, e.g. "career-exploration".
+  slug      String
+  type      TagType  @default(TOPIC)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  programs             ProgramTag[]
+  consultationServices ConsultationServiceTag[]
+  communities          CommunityTag[]
+  formatForServices    ConsultationService[] @relation("ConsultationServiceFormat")
+
+  // Scoped by type so "Wellness" can exist as both a TOPIC and a FORMAT.
+  @@unique([type, slug])
+  // Powers GET /api/tags?type=TOPIC (admin autocomplete), ordered by name.
+  @@index([type, name])
+  @@map("tags")
+}
+
+// Explicit join tables (rather than Prisma implicit m-n) so pill order is
+// preserved and the reverse lookup index is explicit.
+model ProgramTag {
+  programId String
+  tagId     String
+  order     Int    @default(0)
+
+  program Program @relation(fields: [programId], references: [id], onDelete: Cascade)
+  tag     Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([programId, tagId])
+  // The composite PK only indexes programId-first; this covers "programs tagged X".
+  @@index([tagId])
+  @@map("program_tags")
+}
+
+model ConsultationServiceTag {
+  serviceId String
+  tagId     String
+  order     Int    @default(0)
+
+  service ConsultationService @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  tag     Tag                 @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([serviceId, tagId])
+  @@index([tagId])
+  @@map("consultation_service_tags")
+}
+
+model CommunityTag {
+  communityId String
+  tagId       String
+  order       Int    @default(0)
+
+  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  tag       Tag       @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([communityId, tagId])
+  @@index([tagId])
+  @@map("community_tags")
+}
+
+// ── Communities (WhatsApp groups) ─────────────────────────────────────────────
+
+model Community {
+  id           String   @id @default(cuid())
+  title        String
+  slug         String   @unique
+  subtitle     String
+  description  String
+  /// "What You'll Gain" bullet list.
+  gains        String[]
+  /// Key into the frontend pd-icons map (e.g. "stewardship"). Not an image URL.
+  iconKey      String?
+  /// SECRET. Emailed to applicants; never included in a public API response and
+  /// never indexed into the chat knowledge base. See toPublicCommunity().
+  whatsappLink String
+  isPublished  Boolean  @default(true)
+  order        Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tags         CommunityTag[]
+  joinRequests CommunityJoinRequest[]
+
+  @@index([isPublished, order])
+  @@map("communities")
+}
+
+// Anonymous join application. On successful submit the WhatsApp link is emailed
+// immediately; admins view these as a record and can resend a failed delivery.
+model CommunityJoinRequest {
+  id             String    @id @default(cuid())
+  communityId    String
+  fullName       String
+  email          String
+  phone          String?
+  reason         String?
+  agreedToPolicy Boolean   @default(false)
+  /// Null when the send failed — drives the admin "resend" action.
+  linkEmailedAt  DateTime?
+  emailError     String?
+  source         String    @default("community_page")
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+
+  // Re-applying updates the existing row instead of re-blasting the link.
+  @@unique([communityId, email])
+  @@index([communityId, createdAt])
+  @@index([email])
+  @@map("community_join_requests")
 }
 
 model Consultation {
