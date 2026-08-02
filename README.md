@@ -53,9 +53,9 @@ Health check: `http://localhost:5000/health`
 ### Programs — `/api/programs`
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
-| GET | `/` | Public | List all programs (incl. `audience`, `tags`) |
-| GET | `/:id` | Public | Program detail (incl. `audience`, `tags`) |
-| POST | `/` | Admin | Create program — accepts `audience` (bullets) and `tags` (names) |
+| GET | `/` | Public | List all programs (incl. `audience`, `tags`, `videoLinks`) |
+| GET | `/:id` | Public | Program detail (incl. `audience`, `tags`, `videoLinks`) |
+| POST | `/` | Admin | Create program — accepts `audience` (bullets), `tags` (names) and `videoLinks` |
 | PATCH | `/:id` | Admin | Update program — omit a field to keep it, send `[]` to clear |
 | DELETE | `/:id` | Admin | Delete program |
 | POST | `/:id/lessons` | Admin | Add lesson |
@@ -104,6 +104,28 @@ rather than erroring — there is no separate "create tag" endpoint. Tags are
 deduped by a normalised slug scoped to their type, so `Wellness` can exist as
 both a `TOPIC` and a `FORMAT` without colliding.
 
+### Video embeds (`videoLinks`)
+
+`Program` and `Community` each carry a `videoLinks` array of YouTube URLs.
+**Array order is the display order** — there is no separate order column, so a
+`PATCH` replaces the whole list and that is also how the admin reorders them.
+Omit the field to keep the current list; send `[]` to clear it.
+
+Links are validated and canonicalised on write. All of these are accepted and
+stored as `https://www.youtube.com/watch?v=<id>`:
+
+```
+https://youtu.be/<id>                     https://www.youtube.com/embed/<id>
+https://www.youtube.com/watch?v=<id>      https://www.youtube.com/shorts/<id>
+https://m.youtube.com/watch?v=<id>        https://www.youtube.com/live/<id>
+```
+
+Extra query params (`&list=`, `&t=`) are dropped. Anything that is not a
+YouTube video URL is **rejected with a 400** rather than stored — a link that
+cannot embed is worse than no link. Duplicates are collapsed by video id, so
+the same video pasted in two different URL forms is stored once, keeping its
+first position. Maximum 12 per entity.
+
 Two shapes, deliberately distinct:
 - **`tags`** (`TOPIC`) — short reusable pills, many per entity, shared vocabulary.
 - **`audience` / `whatsIncluded` / `gains`** — full-sentence bullets written per
@@ -113,8 +135,8 @@ Two shapes, deliberately distinct:
 ### Communities — `/api/communities`
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
-| GET | `/` | Public | Published communities — **`whatsappLink` is stripped** |
-| GET | `/:idOrSlug` | Public | Community detail by cuid or slug — link stripped |
+| GET | `/` | Public | Published communities (incl. `videoLinks`) — **`whatsappLink` is stripped** |
+| GET | `/:idOrSlug` | Public | Community detail by cuid or slug (incl. `videoLinks`) — link stripped |
 | POST | `/:idOrSlug/join` | Public | Apply to join; saves the request and **emails the group link immediately**. Rate limited to 10 / 15 min, honeypot `website` field |
 | GET | `/admin/all` | Admin | Paginated list **including** `whatsappLink` |
 | GET | `/admin/:id` | Admin | Detail including `whatsappLink` |

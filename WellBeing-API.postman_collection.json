@@ -892,10 +892,15 @@
                   "key": "tags",
                   "type": "text",
                   "value": "[\"Leadership\", \"Self-Discovery\"]"
+                },
+                {
+                  "key": "videoLinks",
+                  "value": "[\"https://www.youtube.com/watch?v=dQw4w9WgXcQ\", \"https://youtu.be/aqz-KE-bpKQ\"]",
+                  "type": "text"
                 }
               ]
             },
-            "description": "Admin only. Creates a new program. Use form-data to optionally attach a thumbnail image. audience = full-sentence bullets (JSON array). tags = short TOPIC pills (JSON array); unknown names are created automatically. On PATCH, omit to keep, send [] to clear."
+            "description": "Admin only. Creates a new program. Use form-data to optionally attach a thumbnail image. audience = full-sentence bullets (JSON array). tags = short TOPIC pills (JSON array); unknown names are created automatically. On PATCH, omit to keep, send [] to clear. videoLinks is an ordered array of YouTube URLs — array order IS the display order, so a PATCH replaces the whole list and that is also how you reorder. Any YouTube URL form is accepted (watch / youtu.be / embed / shorts / live) and stored canonicalised; non-YouTube URLs are rejected with 400. Max 12, duplicates collapsed by video id."
           }
         },
         {
@@ -942,10 +947,15 @@
                   "key": "tags",
                   "type": "text",
                   "value": "[\"Leadership\", \"Self-Discovery\"]"
+                },
+                {
+                  "key": "videoLinks",
+                  "value": "[\"https://www.youtube.com/watch?v=dQw4w9WgXcQ\", \"https://youtu.be/aqz-KE-bpKQ\"]",
+                  "type": "text"
                 }
               ]
             },
-            "description": "Admin only. Updates any program fields. Set isPublished=true to make it visible to users. audience = full-sentence bullets (JSON array). tags = short TOPIC pills (JSON array); unknown names are created automatically. On PATCH, omit to keep, send [] to clear."
+            "description": "Admin only. Updates any program fields. Set isPublished=true to make it visible to users. audience = full-sentence bullets (JSON array). tags = short TOPIC pills (JSON array); unknown names are created automatically. On PATCH, omit to keep, send [] to clear. videoLinks is an ordered array of YouTube URLs — array order IS the display order, so a PATCH replaces the whole list and that is also how you reorder. Any YouTube URL form is accepted (watch / youtu.be / embed / shorts / live) and stored canonicalised; non-YouTube URLs are rejected with 400. Max 12, duplicates collapsed by video id."
           }
         },
         {
@@ -3865,7 +3875,7 @@
                 "communities"
               ]
             },
-            "description": "JSON body. whatsappLink is required and must be an https URL. Unknown tag names are created automatically. Slug is derived from the title unless one is supplied.",
+            "description": "JSON body. whatsappLink is required and must be an https URL. Unknown tag names are created automatically. Slug is derived from the title unless one is supplied. videoLinks is an ordered array of YouTube URLs — array order IS the display order, so a PATCH replaces the whole list and that is also how you reorder. Any YouTube URL form is accepted (watch / youtu.be / embed / shorts / live) and stored canonicalised; non-YouTube URLs are rejected with 400. Max 12, duplicates collapsed by video id.",
             "header": [
               {
                 "key": "Authorization",
@@ -3883,7 +3893,7 @@
                   "language": "json"
                 }
               },
-              "raw": "{\n  \"title\": \"The Generalist Pathfinders\",\n  \"subtitle\": \"A supportive space for multi-passionate individuals exploring diverse paths.\",\n  \"description\": \"Discover your strengths across multiple disciplines and build a portfolio career.\",\n  \"gains\": [\n    \"Weekly exploration sessions across career paths\",\n    \"Strength-mapping workshops to identify transferable skills\"\n  ],\n  \"iconKey\": \"generalist-pathfinders\",\n  \"whatsappLink\": \"https://chat.whatsapp.com/EXAMPLE123\",\n  \"tags\": [\n    \"Career Exploration\",\n    \"Portfolio Careers\",\n    \"Self-Discovery\"\n  ],\n  \"isPublished\": true,\n  \"order\": 0\n}"
+              "raw": "{\n  \"title\": \"The Generalist Pathfinders\",\n  \"subtitle\": \"A supportive space for multi-passionate individuals exploring diverse paths.\",\n  \"description\": \"Discover your strengths across multiple disciplines and build a portfolio career.\",\n  \"gains\": [\n    \"Weekly exploration sessions across career paths\",\n    \"Strength-mapping workshops to identify transferable skills\"\n  ],\n  \"iconKey\": \"generalist-pathfinders\",\n  \"whatsappLink\": \"https://chat.whatsapp.com/EXAMPLE123\",\n  \"tags\": [\n    \"Career Exploration\",\n    \"Portfolio Careers\",\n    \"Self-Discovery\"\n  ],\n  \"isPublished\": true,\n  \"order\": 0,\n  \"videoLinks\": [\n    \"https://www.youtube.com/watch?v=dQw4w9WgXcQ\",\n    \"https://youtu.be/aqz-KE-bpKQ\"\n  ]\n}"
             }
           },
           "event": [
@@ -3916,7 +3926,7 @@
                 "{{communityId}}"
               ]
             },
-            "description": "Partial update. Omit a field to keep it. gains/tags replace the whole list. whatsappLink cannot be cleared — a community without one cannot fulfil a join request.",
+            "description": "Partial update. Omit a field to keep it. gains/tags replace the whole list. whatsappLink cannot be cleared — a community without one cannot fulfil a join request. videoLinks is an ordered array of YouTube URLs — array order IS the display order, so a PATCH replaces the whole list and that is also how you reorder. Any YouTube URL form is accepted (watch / youtu.be / embed / shorts / live) and stored canonicalised; non-YouTube URLs are rejected with 400. Max 12, duplicates collapsed by video id.",
             "header": [
               {
                 "key": "Authorization",
@@ -3934,7 +3944,7 @@
                   "language": "json"
                 }
               },
-              "raw": "{\n  \"subtitle\": \"An updated subtitle.\",\n  \"tags\": [\n    \"Career Exploration\",\n    \"Mentorship\"\n  ]\n}"
+              "raw": "{\n  \"subtitle\": \"An updated subtitle.\",\n  \"tags\": [\n    \"Career Exploration\",\n    \"Mentorship\"\n  ],\n  \"videoLinks\": [\n    \"https://www.youtube.com/watch?v=dQw4w9WgXcQ\",\n    \"https://youtu.be/aqz-KE-bpKQ\"\n  ]\n}"
             }
           }
         },
