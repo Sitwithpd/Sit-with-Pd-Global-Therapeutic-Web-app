@@ -271,7 +271,7 @@ export const updateConsultation = catchAsync(async (req: Request, res: Response)
 
 // POST /api/admin/consultations/services — Create a new service
 export const createService = catchAsync(async (req: AuthRequest, res: Response) => {
-  const { title, description, price, currency, duration, calEventTypeId } = req.body;
+  const { title, description, price, duration, calEventTypeId } = req.body;
 
   let parsedCal: number | undefined;
   if (calEventTypeId != null && calEventTypeId !== '') {
@@ -323,7 +323,7 @@ export const createService = catchAsync(async (req: AuthRequest, res: Response) 
 
 // PATCH /api/admin/consultations/services/:id — Edit a service
 export const updateService = catchAsync(async (req: AuthRequest, res: Response) => {
-  const { title, description, price, currency, duration, isActive, calEventTypeId } = req.body;
+  const { title, description, price, duration, isActive, calEventTypeId } = req.body;
 
   let nextCal: number | null | undefined;
   if (calEventTypeId !== undefined) {

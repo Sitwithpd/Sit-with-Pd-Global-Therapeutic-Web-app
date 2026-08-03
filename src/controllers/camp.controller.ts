@@ -529,7 +529,7 @@ export const getMyCampRegistrations = catchAsync(async (req: AuthRequest, res: R
 
 // POST /api/camps — Create a camp (set prices on tiers after creation)
 export const createCamp = catchAsync(async (req: AuthRequest, res: Response) => {
-  const { title, description, location, capacity, startDate, endDate, currency, category, benefits } =
+  const { title, description, location, capacity, startDate, endDate, category, benefits } =
     req.body;
   const thumbnail = (req.file as Express.Multer.File & { path: string })?.path;
 
@@ -568,7 +568,6 @@ export const updateCamp = catchAsync(async (req: AuthRequest, res: Response) => 
     startDate,
     endDate,
     status,
-    currency,
     category,
     benefits,
   } = req.body;
