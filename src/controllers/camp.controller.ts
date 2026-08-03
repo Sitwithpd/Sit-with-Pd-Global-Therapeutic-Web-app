@@ -3,8 +3,7 @@ import { Prisma, CampStatus, CampRegistrationStatus } from '@prisma/client';
 import prisma from '../config/prisma';
 import { mapForeignKeyDeleteError } from '../lib/prismaDeleteErrors';
 import { buildMeta, parseAdminPagination } from '../lib/pagination';
-import { withPrices } from '../lib/priceSerialization';
-import { serializePaymentAmount } from '../lib/priceSerialization';
+import { withPrice, withPrices, serializePaymentAmount } from '../lib/priceSerialization';
 import { currencyOf } from '../middleware/currency.middleware';
 import { BASE_CURRENCY, parseToMinor } from '../lib/money';
 import { catchAsync, AppError } from '../middleware/error.middleware';
@@ -686,10 +685,19 @@ export const getCampParticipants = catchAsync(async (req: Request, res: Response
     prisma.campRegistration.count({ where }),
   ]);
 
+  // The tier was returned with a raw priceMinor, so the admin table read a
+  // `tier.price` that never existed. Priced at base: this is a management view.
+  const data = await Promise.all(
+    registrations.map(async ({ tier, ...rest }) => ({
+      ...withPaymentAmount(rest),
+      tier: tier ? await withPrice(tier, BASE_CURRENCY) : null,
+    }))
+  );
+
   res.json({
     success: true,
     message: 'Participants fetched.',
-    data: registrations.map(withPaymentAmount),
+    data,
     meta: buildMeta(total, page, limit),
   });
 });

@@ -196,6 +196,22 @@ export const getMyConsultations = catchAsync(async (req: AuthRequest, res: Respo
 // ADMIN ROUTES
 // ─────────────────────────────────────────────
 
+// GET /api/consultations/admin/services — every service, active or not
+export const getAllServicesAdmin = catchAsync(async (_req: AuthRequest, res: Response) => {
+  const services = await prisma.consultationService.findMany({
+    orderBy: { createdAt: 'asc' },
+    include: serviceRelationInclude,
+  });
+
+  res.json({
+    success: true,
+    message: 'Services fetched.',
+    // Deactivating a service must not hide it from the screen that manages it,
+    // and prices are shown in the currency they were entered in.
+    data: await withPrices(services.map(serializeService), BASE_CURRENCY, { admin: true }),
+  });
+});
+
 // GET /api/admin/consultations — optional ?search= & ?status=PENDING|…
 export const getAllConsultations = catchAsync(async (req: Request, res: Response) => {
   const { skip, page, limit } = parseAdminPagination(req);
@@ -235,7 +251,7 @@ export const getAllConsultations = catchAsync(async (req: Request, res: Response
       where,
       include: {
         user: { select: { id: true, firstName: true, lastName: true, email: true } },
-        service: true,
+        service: { include: serviceRelationInclude },
         payment: { select: { status: true, presentmentAmountMinor: true, presentmentCurrency: true, baseAmountMinor: true, baseCurrency: true } },
       },
       orderBy: { createdAt: 'desc' },
@@ -245,10 +261,21 @@ export const getAllConsultations = catchAsync(async (req: Request, res: Response
     prisma.consultation.count({ where }),
   ]);
 
+  // A booking has no price of its own: what was charged lives on the payment,
+  // and the list price lives on the service. Both were previously returned raw,
+  // leaving the admin table to read a `price` field that never existed.
+  const data = await Promise.all(
+    consultations.map(async ({ service, payment, ...rest }) => ({
+      ...rest,
+      service: service ? await withPrice(serializeService(service), BASE_CURRENCY) : null,
+      payment: payment ? { ...payment, ...serializePaymentAmount(payment) } : null,
+    }))
+  );
+
   res.json({
     success: true,
     message: 'All consultations fetched.',
-    data: consultations,
+    data,
     meta: buildMeta(total, page, limit),
   });
 });
@@ -315,7 +342,7 @@ export const createService = catchAsync(async (req: AuthRequest, res: Response) 
   if (req.body.tags !== undefined) {
     await syncConsultationServiceTags(serviceId, req.body.tags);
   }
-  const created = await findServiceForResponse(serviceId, currencyOf(req));
+  const created = await findServiceForResponse(serviceId, BASE_CURRENCY);
 
   scheduleChatReindexConsultationService(serviceId);
   res.status(201).json({ success: true, message: 'Service created.', data: created });
@@ -386,7 +413,7 @@ export const updateService = catchAsync(async (req: AuthRequest, res: Response) 
   if (req.body.tags !== undefined) {
     await syncConsultationServiceTags(req.params.id, req.body.tags);
   }
-  const service = await findServiceForResponse(req.params.id, currencyOf(req));
+  const service = await findServiceForResponse(req.params.id, BASE_CURRENCY);
 
   scheduleChatReindexConsultationService(req.params.id);
   res.json({ success: true, message: 'Service updated.', data: service });

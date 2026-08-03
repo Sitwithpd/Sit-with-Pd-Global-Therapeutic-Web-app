@@ -304,7 +304,9 @@ export const adminGetAllPrograms = catchAsync(async (req: AuthRequest, res: Resp
   res.json({
     success: true,
     message: 'All programs retrieved.',
-    data: await withPrices(programs.map(withSerializedTags), currencyOf(req), { admin: true }),
+    // Admin-only, so the catalogue is served in the currency prices are
+    // entered in rather than in whatever the caller's header asks for.
+    data: await withPrices(programs.map(withSerializedTags), BASE_CURRENCY, { admin: true }),
     meta: buildMeta(total, page, limit),
   });
 });
@@ -448,7 +450,7 @@ export const createProgram = catchAsync(async (req: AuthRequest, res: Response) 
   if (req.body.tags !== undefined) {
     await syncProgramTags(program.id, req.body.tags);
   }
-  const created = await findProgramWithRelations(program.id, currencyOf(req));
+  const created = await findProgramWithRelations(program.id, BASE_CURRENCY);
 
   scheduleChatReindexProgram(program.id);
   res.status(201).json({ success: true, message: 'Program created.', data: created });
@@ -550,7 +552,7 @@ export const updateProgram = catchAsync(async (req: AuthRequest, res: Response) 
   if (req.body.tags !== undefined) {
     await syncProgramTags(id, req.body.tags);
   }
-  const program = await findProgramWithRelations(id, currencyOf(req));
+  const program = await findProgramWithRelations(id, BASE_CURRENCY);
 
   scheduleChatReindexProgram(id);
   res.json({ success: true, message: 'Program updated.', data: program });

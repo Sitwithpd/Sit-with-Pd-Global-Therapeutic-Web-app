@@ -85,16 +85,22 @@ export function serializePaymentAmount(payment: {
   amount: number;
   amountMinor: number;
   currency: string;
+  baseAmount: number;
   baseAmountMinor: number;
   baseCurrency: string;
 } {
   const currency = payment.presentmentCurrency ?? BASE_CURRENCY;
   const minor = payment.presentmentAmountMinor ?? 0n;
+  const baseCurrency = payment.baseCurrency ?? BASE_CURRENCY;
+  const baseMinor = payment.baseAmountMinor ?? 0n;
   return {
     amount: minorToNumber(minor, currency),
     amountMinor: Number(minor),
     currency,
-    baseAmountMinor: Number(payment.baseAmountMinor ?? 0n),
-    baseCurrency: payment.baseCurrency ?? BASE_CURRENCY,
+    // The GBP equivalent locked at checkout, so admin rows reconcile against
+    // the base-currency revenue total.
+    baseAmount: minorToNumber(baseMinor, baseCurrency),
+    baseAmountMinor: Number(baseMinor),
+    baseCurrency,
   };
 }

@@ -132,9 +132,10 @@ camp.
 |--------|----------|------|-------------|
 | GET | `/services` | Public | List services (incl. `coverImageUrl`, `audience`, `whatsIncluded`, `format`, `tags`) |
 | GET | `/services/:id` | Public | Service detail (same shape) |
+| GET | `/admin/services` | Admin | Every service **including inactive ones**, priced in the base currency. The public list filters to `isActive`, which would hide a deactivated service from the screen that manages it |
 | POST | `/book` | User | Book consultation |
 | GET | `/my` | User | My bookings |
-| GET | `/` | Admin | All bookings |
+| GET | `/` | Admin | All bookings. A booking has no price of its own: `service` carries the base-currency list price, `payment` (nullable) carries what was actually charged |
 | PATCH | `/:id` | Admin | Update booking |
 | POST | `/services` | Admin | Create service — **`multipart/form-data`**, optional `coverImage` file |
 | PATCH | `/services/:id` | Admin | Update service — same; JSON callers may pass `coverImageUrl` as a string |
@@ -255,7 +256,7 @@ longer carry their own `currency` column.
 Clients declare a presentment currency with the **`X-Req-Currency`** header.
 Anything unrecognised or disabled silently falls back to GBP — a bad header is
 a client problem, not a reason to fail a page load. Responses set
-`Vary: X-Req-Currency`.
+`Vary: X-Req-Currency, X-Price-Context`.
 
 ```bash
 curl /api/programs                          # GBP
@@ -270,6 +271,34 @@ stored:
 { "price": 114.99, "priceMinor": 11499, "currency": "USD" }
 // admin routes additionally: basePriceMinor, baseCurrency, fxRateId
 ```
+
+### Catalogue vs transaction pricing
+
+Admin screens manage the catalogue in the currency prices are **entered** in,
+so they send **`X-Price-Context: base`**, which pins the request to the base
+currency and overrides `X-Req-Currency`. Without it an admin whose selector
+says NGN would see the naira conversion of a price they typed in pounds.
+
+```bash
+curl /api/consultations/services -H 'X-Req-Currency: NGN'                            # 16000 NGN
+curl /api/consultations/services -H 'X-Req-Currency: NGN' -H 'X-Price-Context: base' # 7.88 GBP
+```
+
+Admin-only routes (`/programs/admin/all`, `/consultations/admin/services`, and
+every create/update response) serve base prices regardless of the header — an
+admin response should not depend on a client getting it right.
+
+**Transaction** figures are never re-converted. A payment records what the
+customer was actually charged, so payment rows keep their presentment currency
+and carry the GBP equivalent locked at checkout alongside it:
+
+```jsonc
+{ "amount": 197000, "currency": "NGN", "baseAmount": 100, "baseCurrency": "GBP" }
+```
+
+That is why `/api/admin/stats` returns a GBP `totalRevenue` **and** a
+`revenueByCurrency` breakdown: the total sums `baseAmountMinor` at each
+payment's historical rate, so it will not match a naive sum of the rows.
 
 ### How a price is derived
 

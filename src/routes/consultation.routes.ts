@@ -5,6 +5,7 @@ import {
   adminManualBookConsultation,
   getMyConsultations,
   getAllConsultations,
+  getAllServicesAdmin,
   updateConsultation,
   createService,
   updateService,
@@ -26,6 +27,7 @@ router.get('/my', authenticate, enforceVerifiedEmailIfRequired, getMyConsultatio
 router.post('/book', authenticate, adminOnly, adminManualBookConsultation);
 
 // ── Admin ─────────────────────────────────────────────────────────────────────
+router.get('/admin/services', authenticate, adminOnly, getAllServicesAdmin);
 router.get('/', authenticate, adminOnly, getAllConsultations);
 router.patch('/:id', authenticate, adminOnly, updateConsultation);
 // `coverImage` is an optional file upload. multer also parses multipart text
