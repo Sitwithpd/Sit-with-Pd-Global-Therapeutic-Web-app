@@ -126,6 +126,10 @@
     {
       "key": "joinRequestId",
       "value": ""
+    },
+    {
+      "key": "reqCurrency",
+      "value": "GBP"
     }
   ],
   "item": [
@@ -145,7 +149,14 @@
                 "health"
               ]
             },
-            "description": "Verify the server is running."
+            "description": "Verify the server is running.",
+            "header": [
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
+              }
+            ]
           }
         }
       ]
@@ -161,6 +172,11 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "body": {
@@ -189,6 +205,11 @@
               {
                 "key": "Accept",
                 "value": "application/json"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -224,6 +245,11 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -275,6 +301,11 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "body": {
@@ -302,6 +333,11 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -341,6 +377,11 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -389,6 +430,11 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -404,9 +450,9 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"email\": \"john@example.com\",\n  \"password\": \"Password123\"\n}"
+              "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"email\": \"john@example.com\",\n  \"password\": \"Password123\",\n  \"participants\": [\n    {\n      \"fullName\": \"Jane Doe\",\n      \"dietaryRequirements\": \"Vegan\",\n      \"emergencyContactName\": \"John Doe\",\n      \"emergencyContactPhone\": \"+2348012345678\"\n    },\n    {\n      \"fullName\": \"Sam Doe\",\n      \"age\": 31,\n      \"relationship\": \"Spouse\"\n    }\n  ]\n}"
             },
-            "description": "Create a new user account. Sends a verification email; token is saved to `authToken`. Response user includes `isEmailVerified` (false until verified)."
+            "description": "Create a new user account. Sends a verification email; token is saved to `authToken`. Response user includes `isEmailVerified` (false until verified). Requires `participants[]` naming EXACTLY seatsPerUnit people (lead first). Blank or duplicate names are rejected. A user may hold several units per camp but only one checkout at a time — a new booking is refused while a hold or pending payment exists."
           }
         },
         {
@@ -435,6 +481,11 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -481,6 +532,11 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -509,6 +565,11 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -537,6 +598,11 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -569,6 +635,11 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -601,6 +672,11 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -642,7 +718,14 @@
                 }
               ]
             },
-            "description": "Confirm email using the token from the verification email (48h expiry). Set `verifyToken` from the email link query string. Response `data`: id, firstName, lastName, email, role, isEmailVerified, createdAt — use GET /me for Settings fields."
+            "description": "Confirm email using the token from the verification email (48h expiry). Set `verifyToken` from the email link query string. Response `data`: id, firstName, lastName, email, role, isEmailVerified, createdAt — use GET /me for Settings fields.",
+            "header": [
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
+              }
+            ]
           }
         },
         {
@@ -653,6 +736,11 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -677,6 +765,11 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -705,6 +798,11 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -756,7 +854,14 @@
                 }
               ]
             },
-            "description": "Published programs only. Optional filters: search, category (program type). No auth."
+            "description": "Published programs only. Optional filters: search, category (program type). No auth.",
+            "header": [
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
+              }
+            ]
           }
         },
         {
@@ -774,7 +879,14 @@
                 "{{programId}}"
               ]
             },
-            "description": "Returns program details and lesson titles (no video URLs until purchased)."
+            "description": "Returns program details and lesson titles (no video URLs until purchased).",
+            "header": [
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
+              }
+            ]
           }
         },
         {
@@ -785,6 +897,11 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -847,6 +964,11 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -911,6 +1033,11 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -966,6 +1093,11 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -1005,6 +1137,11 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -1067,6 +1204,11 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -1108,6 +1250,11 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -1145,7 +1292,14 @@
                 "camps"
               ]
             },
-            "description": "Returns all upcoming and ongoing camps. No auth required. Each camp includes tiers, gallery images, published testimonials, benefits, seatsTaken, and seatsRemaining."
+            "description": "Returns all upcoming and ongoing camps. No auth required. Each camp includes tiers, gallery images, published testimonials, benefits, seatsTaken, and seatsRemaining.",
+            "header": [
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
+              }
+            ]
           }
         },
         {
@@ -1156,6 +1310,11 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -1226,7 +1385,14 @@
                 "current"
               ]
             },
-            "description": "Next upcoming camp (earliest UPCOMING) for the landing page. Test script saves campId and first campTierId when present."
+            "description": "Next upcoming camp (earliest UPCOMING) for the landing page. Test script saves campId and first campTierId when present.",
+            "header": [
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
+              }
+            ]
           }
         },
         {
@@ -1258,7 +1424,14 @@
                 "{{campId}}"
               ]
             },
-            "description": "Returns full camp details including tiers, images, published testimonials, benefits, seatsTaken, and seatsRemaining."
+            "description": "Returns full camp details including tiers, images, published testimonials, benefits, seatsTaken, and seatsRemaining.",
+            "header": [
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
+              }
+            ]
           }
         },
         {
@@ -1288,6 +1461,11 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -1304,23 +1482,28 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"tierId\": \"{{campTierId}}\",\n  \"applicantDetails\": {\n    \"fullName\": \"Jane Doe\",\n    \"phone\": \"+2348000000000\",\n    \"emergencyContact\": {\n      \"name\": \"John Doe\",\n      \"phone\": \"+2348000000001\",\n      \"relationship\": \"Spouse\"\n    },\n    \"dietaryRestrictions\": \"Vegetarian\",\n    \"accommodationPreference\": \"Ground floor if possible\",\n    \"partyMembers\": [],\n    \"notes\": \"First time attending.\"\n  }\n}"
+              "raw": "{\n  \"tierId\": \"{{campTierId}}\",\n  \"applicantDetails\": {\n    \"fullName\": \"Jane Doe\",\n    \"phone\": \"+2348000000000\",\n    \"emergencyContact\": {\n      \"name\": \"John Doe\",\n      \"phone\": \"+2348000000001\",\n      \"relationship\": \"Spouse\"\n    },\n    \"dietaryRestrictions\": \"Vegetarian\",\n    \"accommodationPreference\": \"Ground floor if possible\",\n    \"partyMembers\": [],\n    \"notes\": \"First time attending.\"\n  },\n  \"participants\": [\n    {\n      \"fullName\": \"Jane Doe\",\n      \"dietaryRequirements\": \"Vegan\",\n      \"emergencyContactName\": \"John Doe\",\n      \"emergencyContactPhone\": \"+2348012345678\"\n    },\n    {\n      \"fullName\": \"Sam Doe\",\n      \"age\": 31,\n      \"relationship\": \"Spouse\"\n    }\n  ]\n}"
             },
-            "description": "Submits or refreshes a camp application. tierId required. Success 201: data includes status=PENDING_PAYMENT, paymentExpiresAt (~60 min ISO), tier, camp. Message: Application submitted. Please complete payment within 60 minutes. Then POST /api/payments/initialize with type CAMP and itemId = registration id.\n\nRetry errors: You have already applied for this camp. (CONFIRMED); You have a pending application for this camp... (active hold — resume Paystack); A previous payment is pending review... (SUCCESS payment awaiting ops refund). After worker marks EXPIRED, POST register again reuses the same row with a fresh paymentExpiresAt."
+            "description": "Submits or refreshes a camp application. tierId required. Success 201: data includes status=PENDING_PAYMENT, paymentExpiresAt (~60 min ISO), tier, camp. Message: Application submitted. Please complete payment within 60 minutes. Then POST /api/payments/initialize with type CAMP and itemId = registration id.\n\nRetry errors: You have already applied for this camp. (CONFIRMED); You have a pending application for this camp... (active hold — resume Paystack); A previous payment is pending review... (SUCCESS payment awaiting ops refund). After worker marks EXPIRED, POST register again reuses the same row with a fresh paymentExpiresAt. Requires `participants[]` naming EXACTLY seatsPerUnit people (lead first). Blank or duplicate names are rejected. A user may hold several units per camp but only one checkout at a time — a new booking is refused while a hold or pending payment exists."
           }
         },
         {
-          "name": "[USER] Get My Camp Registration",
+          "name": "Get My Camp Registrations",
           "request": {
             "method": "GET",
             "header": [
               {
                 "key": "Authorization",
                 "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/camps/{{campId}}/my-registration",
+              "raw": "{{baseUrl}}/api/camps/{{campId}}/my-registrations",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -1328,10 +1511,10 @@
                 "api",
                 "camps",
                 "{{campId}}",
-                "my-registration"
+                "my-registrations"
               ]
             },
-            "description": "Returns the logged-in user's registration for this camp (status, paymentExpiresAt, tier, payment) or data=null when none. Use to drive Apply vs Complete payment vs Confirmed without guessing."
+            "description": "All units the user holds for this camp, plus actionable, confirmedUnits, confirmedSeats, canBookAnother and blockedReason."
           }
         },
         {
@@ -1357,6 +1540,11 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -1439,6 +1627,11 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -1494,6 +1687,11 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -1518,6 +1716,11 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -1577,6 +1780,11 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -1610,6 +1818,11 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -1640,6 +1853,11 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -1680,6 +1898,11 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -1731,6 +1954,11 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -1761,6 +1989,11 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -1798,7 +2031,14 @@
                 "testimonials"
               ]
             },
-            "description": "Published testimonials. Add ?campId={{campId}} to filter by camp."
+            "description": "Published testimonials. Add ?campId={{campId}} to filter by camp.",
+            "header": [
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
+              }
+            ]
           }
         },
         {
@@ -1816,7 +2056,14 @@
                 "{{testimonialId}}"
               ]
             },
-            "description": "Single testimonial by id."
+            "description": "Single testimonial by id.",
+            "header": [
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
+              }
+            ]
           }
         },
         {
@@ -1827,6 +2074,11 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -1881,6 +2133,11 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -1946,6 +2203,11 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -1991,6 +2253,11 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -2026,7 +2293,14 @@
                 "team"
               ]
             },
-            "description": "Published team members for the Our Team page. Sorted by order, then createdAt."
+            "description": "Published team members for the Our Team page. Sorted by order, then createdAt.",
+            "header": [
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
+              }
+            ]
           }
         },
         {
@@ -2044,7 +2318,14 @@
                 "{{teamMemberId}}"
               ]
             },
-            "description": "Single published team member. Returns 404 if unpublished or missing."
+            "description": "Single published team member. Returns 404 if unpublished or missing.",
+            "header": [
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
+              }
+            ]
           }
         },
         {
@@ -2055,6 +2336,11 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -2104,6 +2390,11 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -2152,6 +2443,11 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -2191,6 +2487,11 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -2253,7 +2554,14 @@
                 }
               ]
             },
-            "description": "Public. Published posts only, newest first; each row includes author { id, firstName, lastName } or null when unset. Optional filters: category, search (or q). Omit page & limit to return the full list (no meta). With page or limit, response includes meta pagination."
+            "description": "Public. Published posts only, newest first; each row includes author { id, firstName, lastName } or null when unset. Optional filters: category, search (or q). Omit page & limit to return the full list (no meta). With page or limit, response includes meta pagination.",
+            "header": [
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
+              }
+            ]
           }
         },
         {
@@ -2276,7 +2584,14 @@
                 }
               ]
             },
-            "description": "Public. Same as Get All with category query. Change category value as needed."
+            "description": "Public. Same as Get All with category query. Change category value as needed.",
+            "header": [
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
+              }
+            ]
           }
         },
         {
@@ -2294,7 +2609,14 @@
                 "{{blogSlug}}"
               ]
             },
-            "description": "Public. One published post by slug (full body). Includes nested author when linked. 404 if draft. Uses collection variable blogSlug (set by Create requests)."
+            "description": "Public. One published post by slug (full body). Includes nested author when linked. 404 if draft. Uses collection variable blogSlug (set by Create requests).",
+            "header": [
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
+              }
+            ]
           }
         },
         {
@@ -2305,6 +2627,11 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -2360,6 +2687,11 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -2403,6 +2735,11 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -2510,6 +2847,11 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -2591,6 +2933,11 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -2649,6 +2996,11 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -2726,6 +3078,11 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -2763,7 +3120,14 @@
                 "services"
               ]
             },
-            "description": "Returns all active consultation services. No auth required."
+            "description": "Returns all active consultation services. No auth required.",
+            "header": [
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
+              }
+            ]
           }
         },
         {
@@ -2782,7 +3146,14 @@
                 "{{serviceId}}"
               ]
             },
-            "description": "Returns a single consultation service detail."
+            "description": "Returns a single consultation service detail.",
+            "header": [
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
+              }
+            ]
           }
         },
         {
@@ -2812,6 +3183,11 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -2840,6 +3216,11 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -2864,6 +3245,11 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -2911,6 +3297,11 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -2958,6 +3349,11 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -2990,6 +3386,11 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -3044,6 +3445,11 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -3092,6 +3498,11 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -3124,6 +3535,11 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -3156,6 +3572,11 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -3188,6 +3609,11 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -3220,6 +3646,11 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -3256,7 +3687,14 @@
                 "{{paymentRef}}"
               ]
             },
-            "description": "Check the status of a payment by its reference. Called by the frontend after Paystack redirects back."
+            "description": "Check the status of a payment by its reference. Called by the frontend after Paystack redirects back.",
+            "header": [
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
+              }
+            ]
           }
         },
         {
@@ -3267,6 +3705,11 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -3293,39 +3736,6 @@
           }
         },
         {
-          "name": "[WEBHOOK] Paystack Webhook (simulate)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "x-paystack-signature",
-                "value": "COMPUTED_HMAC_SHA512_SIGNATURE",
-                "description": "In production this is sent by Paystack automatically. For local testing use Paystack CLI."
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/payments/webhook",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "payments",
-                "webhook"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"event\": \"charge.success\",\n  \"data\": {\n    \"reference\": \"{{paymentRef}}\",\n    \"amount\": 2500000,\n    \"status\": \"success\",\n    \"metadata\": {\n      \"userId\": \"USER_ID_HERE\",\n      \"type\": \"PROGRAM\",\n      \"itemId\": \"PROGRAM_ID_HERE\"\n    },\n    \"customer\": {\n      \"email\": \"john@example.com\"\n    }\n  }\n}"
-            },
-            "description": "⚠️ For local testing only. In production, Paystack calls this automatically. Use Paystack CLI (paystack listen) to forward real webhook events to localhost."
-          }
-        },
-        {
           "name": "[WEBHOOK] Flutterwave Webhook (simulate)",
           "request": {
             "method": "POST",
@@ -3338,6 +3748,11 @@
                 "key": "verif-hash",
                 "value": "{{flutterwaveWebhookHash}}",
                 "description": "Must equal FLUTTERWAVE_WEBHOOK_HASH on the server. Set in Flutterwave dashboard → Settings → Webhooks."
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -3371,6 +3786,11 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -3394,6 +3814,11 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -3419,6 +3844,11 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -3451,6 +3881,11 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -3484,6 +3919,11 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -3515,7 +3955,13 @@
           "name": "Get Chat Config (Public)",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/chat/config",
               "host": [
@@ -3549,7 +3995,13 @@
           ],
           "request": {
             "method": "POST",
-            "header": [],
+            "header": [
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/chat/sessions",
               "host": [
@@ -3568,7 +4020,13 @@
           "name": "Get Chat Session History",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/chat/sessions/{{chatSessionId}}",
               "host": [
@@ -3592,6 +4050,11 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "body": {
@@ -3622,6 +4085,11 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -3647,6 +4115,11 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -3683,7 +4156,14 @@
                 "tags"
               ]
             },
-            "description": "Shared tag vocabulary across programs, consultations and communities. Tags are created on demand when an unknown name is passed on a create/update — there is no create-tag endpoint."
+            "description": "Shared tag vocabulary across programs, consultations and communities. Tags are created on demand when an unknown name is passed on a create/update — there is no create-tag endpoint.",
+            "header": [
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
+              }
+            ]
           }
         },
         {
@@ -3700,7 +4180,14 @@
                 "tags"
               ]
             },
-            "description": "Short reusable pills. Feeds the admin autocomplete."
+            "description": "Short reusable pills. Feeds the admin autocomplete.",
+            "header": [
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
+              }
+            ]
           }
         },
         {
@@ -3717,7 +4204,14 @@
                 "tags"
               ]
             },
-            "description": "Consultation delivery formats. Exactly one per service."
+            "description": "Consultation delivery formats. Exactly one per service.",
+            "header": [
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
+              }
+            ]
           }
         },
         {
@@ -3734,7 +4228,14 @@
                 "tags"
               ]
             },
-            "description": "Case-insensitive substring match on tag name."
+            "description": "Case-insensitive substring match on tag name.",
+            "header": [
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
+              }
+            ]
           }
         }
       ]
@@ -3756,7 +4257,14 @@
                 "communities"
               ]
             },
-            "description": "Published communities, ordered. IMPORTANT: whatsappLink is stripped from this response — it is emailed to applicants only."
+            "description": "Published communities, ordered. IMPORTANT: whatsappLink is stripped from this response — it is emailed to applicants only.",
+            "header": [
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
+              }
+            ]
           }
         },
         {
@@ -3774,7 +4282,14 @@
                 "{{communitySlug}}"
               ]
             },
-            "description": "Accepts a cuid or a slug. whatsappLink is stripped."
+            "description": "Accepts a cuid or a slug. whatsappLink is stripped.",
+            "header": [
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
+              }
+            ]
           }
         },
         {
@@ -3798,6 +4313,11 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "body": {
@@ -3832,6 +4352,11 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ]
           }
@@ -3857,6 +4382,11 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ]
           }
@@ -3884,6 +4414,11 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "body": {
@@ -3935,6 +4470,11 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "body": {
@@ -3968,6 +4508,11 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ]
           }
@@ -3993,6 +4538,11 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ]
           }
@@ -4020,6 +4570,215 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "💱 FX & Currency",
+      "item": [
+        {
+          "name": "[ADMIN] Get FX Rates",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/fx/rates",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "fx",
+                "rates"
+              ]
+            },
+            "description": "Current rate per currency with age, staleness flag and consecutive sync-failure count. Base is GBP and has no rate.",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
+              }
+            ]
+          }
+        },
+        {
+          "name": "[ADMIN] Trigger FX Sync",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/fx/sync",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "fx",
+                "sync"
+              ]
+            },
+            "description": "Runs the ingest now. A rate is only written when it moves more than FX_DRIFT_THRESHOLD_BPS (default 150 = 1.5%) — 'unchanged' is the normal result.",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
+              }
+            ]
+          }
+        },
+        {
+          "name": "[ADMIN] Override FX Rate",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/fx/rates",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "fx",
+                "rates"
+              ]
+            },
+            "description": "Manual override when the feed is wrong. rate = quote units per 1 GBP. Recorded with source 'manual'.",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
+              "raw": "{\n  \"quoteCurrency\": \"USD\",\n  \"rate\": 1.37\n}"
+            }
+          }
+        },
+        {
+          "name": "[ADMIN] Get Supported Currencies",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/currencies",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "currencies"
+              ]
+            },
+            "description": "The presentment allow-list. With Flutterwave as the only provider this is also the capability list.",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
+              }
+            ]
+          }
+        },
+        {
+          "name": "[ADMIN] Update Currency",
+          "request": {
+            "method": "PATCH",
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/currencies/USD",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "currencies",
+                "USD"
+              ]
+            },
+            "description": "Enable/disable a currency or set its margin in basis points. The base currency cannot be disabled.",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
+              "raw": "{\n  \"isEnabled\": true,\n  \"marginBps\": 200\n}"
+            }
+          }
+        },
+        {
+          "name": "Localized Prices (USD)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/programs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "programs"
+              ]
+            },
+            "description": "Same endpoint, different X-Req-Currency header. Set the collection variable reqCurrency to USD/EUR/NGN to compare. Unrecognised values fall back to GBP.",
+            "header": [
+              {
+                "key": "X-Req-Currency",
+                "value": "USD",
+                "type": "text"
               }
             ]
           }
@@ -4037,6 +4796,11 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -4061,6 +4825,11 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -4100,6 +4869,11 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -4125,6 +4899,11 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -4167,6 +4946,11 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -4195,6 +4979,11 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -4228,6 +5017,11 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -4261,6 +5055,11 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "X-Req-Currency",
+                "value": "{{reqCurrency}}",
+                "type": "text"
               }
             ],
             "url": {
