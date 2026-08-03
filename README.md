@@ -387,38 +387,51 @@ Change these immediately in production.
 
 ## Migration runbook — money / multi-currency
 
-Three steps, deliberately not one deploy. `prisma migrate deploy` is run
-manually here (the build script does not run it), so the operator controls the
-gap between them.
+**Migrations are automatic.** The Render build command ends with
+`npx prisma migrate deploy`, so every pending migration applies in a single
+pass on deploy. There is no window to run a script between them, which is why
+the conversion lives in SQL inside
+`20260803145000_money_backfill_base_prices` rather than in
+`scripts/backfillMoney.ts`.
+
+The three money migrations must stay in this order:
+
+1. `..._money_expand_fx_tables` — additive: FX tables, nullable `priceMinor`
+   and ledger columns.
+2. `..._money_backfill_base_prices` — seeds currencies and rates, converts
+   every legacy price and payment into GBP minor units. Idempotent.
+3. `..._money_contract_drop_legacy_currency` — drops the old columns and
+   applies `NOT NULL`.
+
+### Conversion rates are fixed in the migration, on purpose
+
+The rates are hard-coded in step 2 so a price converts to the same value
+regardless of when the deploy runs. They are real Flutterwave rates from
+authoring time; the FX sync replaces them with live ones on first boot.
+
+**Migration-day rates permanently set the GBP catalogue.** Check the converted
+prices after deploying and adjust any that look wrong — they are ordinary GBP
+prices from that point on.
+
+**Pre-migration revenue in GBP is an estimate.** Historical payments are
+converted at the same fixed rate because no historical rates exist. Those rows
+point at an `FxRate` marked `source: "migration"` so reporting can flag them.
+
+### If a migration fails mid-deploy
+
+Prisma runs each migration in a transaction, so a failure rolls that migration
+back completely — but it stays recorded as failed and blocks every later
+deploy. Clear it, then redeploy:
 
 ```bash
-# 1. Expand — additive, reversible. Adds FX tables + nullable priceMinor and
-#    ledger columns. Old columns still present.
-npx prisma migrate deploy   # stops after ..._money_expand_fx_tables
-
-# 2. Backfill — seeds currencies, pulls live rates from Flutterwave, converts
-#    every price and historical payment. Preview first.
-npm run db:backfill-money -- --dry-run
-npm run db:backfill-money
-
-# 3. Contract — irreversible. Only after step 2 reports zero unconverted rows.
-npx prisma migrate deploy   # applies ..._money_contract_drop_legacy_currency
+npx prisma migrate resolve --rolled-back <migration_name>
 ```
 
-Leave at least one deploy between 2 and 3: until the contract step runs, the
-old `price` / `currency` columns still hold the original values, so a bad
-backfill is recoverable.
+`scripts/backfillMoney.ts` is still available (`npm run db:backfill-money`,
+supports `--dry-run`) for converting a database by hand — it pulls live rates
+rather than the fixed ones — but it is not part of the deploy path.
 
-Two things to know about the backfill:
-
-- **Migration-day rates permanently set the GBP catalogue.** A ₦50,000 programme
-  becomes whatever that day's rate makes it. Eyeball the converted prices in
-  the gap before step 3.
-- **Pre-migration revenue in GBP is an estimate.** Historical payments are
-  converted at today's rate because no historical rates exist; those rows point
-  at an `FxRate` marked `source: "migration"` so reporting can flag them.
-
-Before removing the Paystack webhook (step 3), confirm nothing is in flight:
+### Before removing the Paystack webhook
 
 ```sql
 SELECT count(*) FROM payments WHERE provider = 'PAYSTACK' AND status = 'PENDING';
