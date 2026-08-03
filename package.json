@@ -12,7 +12,11 @@
     "db:generate": "prisma generate",
     "db:studio": "prisma studio",
     "db:seed": "ts-node prisma/seed.ts",
-    "chat:reindex": "ts-node scripts/reindexChatKnowledge.ts"
+    "chat:reindex": "ts-node scripts/reindexChatKnowledge.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:unit": "vitest run tests/unit",
+    "db:backfill-money": "ts-node scripts/backfillMoney.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.10.0",
@@ -47,7 +51,8 @@
     "@types/nodemailer": "^6.4.14",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "vitest": "^2.1.9"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
