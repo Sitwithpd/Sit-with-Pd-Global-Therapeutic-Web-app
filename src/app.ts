@@ -21,15 +21,22 @@ import communityRoutes from './routes/community.routes';
 import chatRoutes from './routes/chat.routes';
 import { dashboardRouter, adminRouter } from './routes/admin.routes';
 import { errorHandler } from './middleware/error.middleware';
+import { resolveCurrency } from './middleware/currency.middleware';
 import { calWebhook } from './controllers/consultation.cal.controller';
-import { paystackWebhook, flutterwaveWebhook } from './controllers/payment.controller';
+import { flutterwaveWebhook } from './controllers/payment.controller';
 import { processExpiredConsultationPayments } from './services/consultationExpiry.service';
 import { processExpiredCampRegistrations } from './services/campRegistrationExpiry.service';
 import { processCampStatusTransitions } from './services/campStatus.service';
 import { cronReindexChatKnowledge } from './controllers/adminChat.controller';
+import { runFxSync } from './services/fx/fxSync.job';
 
 const app = express();
 app.set('trust proxy', 1);
+
+// BigInt money columns would otherwise throw inside res.json().
+app.set('json replacer', (_key: string, value: unknown) =>
+  typeof value === 'bigint' ? Number(value) : value
+);
 
 
 // ── Security Middleware ───────────────────────────────────────────────────────
@@ -99,13 +106,6 @@ app.post(
   }
 );
 
-app.post(
-  '/api/payments/webhook',
-  raw({ type: 'application/json' }),
-  (req, res, next) => {
-    Promise.resolve(paystackWebhook(req, res)).catch(next);
-  }
-);
 
 // Flutterwave webhook — auth via static `verif-hash` header from FLW dashboard.
 // Raw body kept for parity (and forward-compat if we ever HMAC the body).
@@ -160,6 +160,20 @@ app.post('/api/internal/cron/camp-status', async (req, res, next) => {
   }
 });
 
+app.post('/api/internal/cron/fx-sync', async (req, res, next) => {
+  const secret = process.env.CRON_SECRET;
+  const auth = req.headers.authorization;
+  if (!secret || auth !== `Bearer ${secret}`) {
+    return res.status(401).json({ success: false, message: 'Unauthorized.' });
+  }
+  try {
+    const outcomes = await runFxSync();
+    return res.json({ success: true, data: outcomes });
+  } catch (e) {
+    next(e);
+  }
+});
+
 app.post('/api/internal/cron/chat-reindex', (req, res, next) => {
   const secret = process.env.CRON_SECRET;
   const auth = req.headers.authorization;
@@ -171,6 +185,9 @@ app.post('/api/internal/cron/chat-reindex', (req, res, next) => {
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
+
+// Resolves X-Req-Currency for every downstream handler; falls back to GBP.
+app.use(resolveCurrency);
 
 // ── Health Check ──────────────────────────────────────────────────────────────
 app.get('/health', (_req, res) => {

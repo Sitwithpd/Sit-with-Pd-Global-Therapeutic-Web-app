@@ -2,6 +2,7 @@ import { ChatKnowledgeSourceType } from '@prisma/client';
 import prisma from '../../../config/prisma';
 import { CHAT_FRONTEND_PATHS } from '../../../config/chat';
 import { KnowledgeDocumentChunk } from '../../../types/chat.types';
+import { BASE_CURRENCY, formatMoney } from '../../../lib/money';
 
 export async function extractConsultationChunks(serviceId: string): Promise<KnowledgeDocumentChunk[]> {
   const service = await prisma.consultationService.findFirst({
@@ -21,7 +22,7 @@ export async function extractConsultationChunks(serviceId: string): Promise<Know
   const text = [
     `Consultation service: ${service.title}`,
     `Duration: ${service.duration} minutes`,
-    `Price: ${service.price} ${service.currency}`,
+    `Price: ${formatMoney(service.priceMinor, BASE_CURRENCY)}`,
     service.formatTag ? `Format: ${service.formatTag.name}` : '',
     topics.length > 0 ? `Topics: ${topics.join(', ')}` : '',
     '',

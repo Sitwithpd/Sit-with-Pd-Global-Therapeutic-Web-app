@@ -1,11 +1,10 @@
 import { Request, Response } from 'express';
-import { PlatformCurrency, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import prisma from '../config/prisma';
 import { catchAsync, AppError } from '../middleware/error.middleware';
 import { ensurePlatformSettings, PLATFORM_SETTINGS_ID } from '../services/platformSettings.service';
 import { isValidIanaTimezone } from '../lib/timezone';
 
-const CURRENCY_VALUES = new Set<string>(Object.values(PlatformCurrency));
 
 // GET /api/admin/settings
 export const getAdminPlatformSettings = catchAsync(async (_req: Request, res: Response) => {
@@ -15,19 +14,16 @@ export const getAdminPlatformSettings = catchAsync(async (_req: Request, res: Re
 
 // PATCH /api/admin/settings/general
 export const patchAdminGeneralSettings = catchAsync(async (req: Request, res: Response) => {
-  const { platformName, supportEmail, defaultTimezone, currency } = req.body as Record<
+  const { platformName, supportEmail, defaultTimezone } = req.body as Record<
     string,
     unknown
   >;
 
   const hasAny =
-    platformName !== undefined ||
-    supportEmail !== undefined ||
-    defaultTimezone !== undefined ||
-    currency !== undefined;
+    platformName !== undefined || supportEmail !== undefined || defaultTimezone !== undefined;
 
   if (!hasAny) {
-    throw new AppError('Provide at least one field: platformName, supportEmail, defaultTimezone, currency.', 400);
+    throw new AppError('Provide at least one field: platformName, supportEmail, defaultTimezone.', 400);
   }
 
   const data: Prisma.PlatformSettingsUpdateInput = {};
@@ -53,12 +49,6 @@ export const patchAdminGeneralSettings = catchAsync(async (req: Request, res: Re
     data.defaultTimezone = tz;
   }
 
-  if (currency !== undefined) {
-    if (typeof currency !== 'string' || !CURRENCY_VALUES.has(currency)) {
-      throw new AppError(`currency must be one of: ${[...CURRENCY_VALUES].join(', ')}.`, 400);
-    }
-    data.currency = currency as PlatformCurrency;
-  }
 
   await ensurePlatformSettings();
   const updated = await prisma.platformSettings.update({

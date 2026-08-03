@@ -12,7 +12,7 @@ function getSecretKey(): string {
   return key;
 }
 
-/** Generic Flutterwave API call wrapper (parity with paystackRequest helper). */
+/** Generic Flutterwave API call wrapper. */
 async function flutterwaveRequest<T = unknown>(
   endpoint: string,
   method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET',

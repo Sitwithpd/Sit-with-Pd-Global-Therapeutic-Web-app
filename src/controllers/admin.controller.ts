@@ -1,7 +1,8 @@
 import { Request, Response } from 'express';
 import prisma from '../config/prisma';
+import { BASE_CURRENCY, minorToNumber } from '../lib/money';
+import { serializePaymentAmount } from '../lib/priceSerialization';
 import { fetchCalEventTypesList } from '../lib/cal';
-import { stripLegacyCampPrice } from '../lib/campSerialization';
 import { buildMeta, parseAdminPagination } from '../lib/pagination';
 import { catchAsync, AppError } from '../middleware/error.middleware';
 import { Prisma } from '@prisma/client';
@@ -17,6 +18,7 @@ export const getDashboardStats = catchAsync(async (_req: Request, res: Response)
     totalCamps,
     totalConsultations,
     totalRevenue,
+    revenueByCurrency,
     recentPayments,
   ] = await Promise.all([
     prisma.user.count({ where: { role: 'USER' } }),
@@ -25,7 +27,13 @@ export const getDashboardStats = catchAsync(async (_req: Request, res: Response)
     prisma.consultation.count(),
     prisma.payment.aggregate({
       where: { status: 'SUCCESS' },
-      _sum: { amount: true },
+      _sum: { baseAmountMinor: true },
+    }),
+    prisma.payment.groupBy({
+      by: ['presentmentCurrency'],
+      where: { status: 'SUCCESS' },
+      _sum: { presentmentAmountMinor: true },
+      _count: true,
     }),
     prisma.payment.findMany({
       where: { status: 'SUCCESS' },
@@ -45,8 +53,16 @@ export const getDashboardStats = catchAsync(async (_req: Request, res: Response)
       totalPrograms,
       totalCamps,
       totalConsultations,
-      totalRevenue: totalRevenue._sum.amount || 0,
-      recentPayments,
+      totalRevenue: minorToNumber(totalRevenue._sum.baseAmountMinor ?? 0n, BASE_CURRENCY),
+      totalRevenueMinor: Number(totalRevenue._sum.baseAmountMinor ?? 0n),
+      currency: BASE_CURRENCY,
+      revenueByCurrency: revenueByCurrency.map((row) => ({
+        currency: row.presentmentCurrency,
+        amount: minorToNumber(row._sum.presentmentAmountMinor ?? 0n, row.presentmentCurrency),
+        amountMinor: Number(row._sum.presentmentAmountMinor ?? 0n),
+        payments: row._count,
+      })),
+      recentPayments: recentPayments.map((p) => ({ ...p, ...serializePaymentAmount(p) })),
     },
   });
 });
@@ -115,13 +131,21 @@ export const getUserById = catchAsync(async (req: Request, res: Response) => {
       email: true,
       isEmailVerified: true,
       createdAt: true,
-      purchases: { include: { program: { select: { title: true, price: true } } } },
+      purchases: { include: { program: { select: { title: true, priceMinor: true } } } },
       campRegistrations: {
         include: {
-          camp: { select: { title: true, startDate: true, thumbnail: true, price: true } },
-          tier: { select: { id: true, label: true, price: true, seatsPerUnit: true } },
+          camp: { select: { title: true, startDate: true, thumbnail: true } },
+          tier: { select: { id: true, label: true, priceMinor: true, seatsPerUnit: true } },
           payment: {
-            select: { status: true, amount: true, createdAt: true, paystackRef: true },
+            select: {
+              status: true,
+              presentmentAmountMinor: true,
+              presentmentCurrency: true,
+              baseAmountMinor: true,
+              baseCurrency: true,
+              createdAt: true,
+              providerRef: true,
+            },
           },
         },
       },
@@ -135,7 +159,7 @@ export const getUserById = catchAsync(async (req: Request, res: Response) => {
         ...user,
         campRegistrations: user.campRegistrations.map((r) => ({
           ...r,
-          camp: stripLegacyCampPrice(r.camp),
+          camp: r.camp,
         })),
       }
     : user;

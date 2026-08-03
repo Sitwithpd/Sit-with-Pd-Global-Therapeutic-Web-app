@@ -3,6 +3,7 @@ import { CHAT_FRONTEND_PATHS } from '../../../config/chat';
 import { KnowledgeDocumentChunk } from '../../../types/chat.types';
 import { ChatKnowledgeSourceType } from '@prisma/client';
 import { chunkPlainText } from '../chunkText.service';
+import { BASE_CURRENCY, formatMoney } from '../../../lib/money';
 
 function formatList(label: string, items: string[]): string {
   if (items.length === 0) return '';
@@ -13,8 +14,7 @@ function buildProgramOverviewText(program: {
   title: string;
   description: string;
   category: string;
-  price: number;
-  currency: string;
+  priceMinor: bigint;
   durationWeeks: number | null;
   hoursPerWeek: number | null;
   certificateLabel: string | null;
@@ -28,7 +28,7 @@ function buildProgramOverviewText(program: {
     `Program: ${program.title}`,
     `Category: ${program.category}`,
     program.topics.length > 0 ? `Topics: ${program.topics.join(', ')}` : null,
-    `Price: ${program.price} ${program.currency}`,
+    `Price: ${formatMoney(program.priceMinor, BASE_CURRENCY)}`,
     program.durationWeeks != null ? `Duration: ${program.durationWeeks} weeks` : null,
     program.hoursPerWeek != null ? `Hours per week: ${program.hoursPerWeek}` : null,
     program.certificateLabel ? `Certificate: ${program.certificateLabel}` : null,

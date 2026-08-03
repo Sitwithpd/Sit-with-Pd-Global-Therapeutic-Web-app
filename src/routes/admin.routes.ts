@@ -39,6 +39,13 @@ import { enforceVerifiedEmailIfRequired } from '../middleware/platformSettings.m
 import { validate } from '../middleware/validate.middleware';
 import { uploadImage } from '../middleware/upload.middleware';
 import { isValidIanaTimezone } from '../lib/timezone';
+import {
+  getFxRates,
+  getSupportedCurrencies,
+  overrideFxRate,
+  triggerFxSync,
+  updateSupportedCurrency,
+} from '../controllers/adminFx.controller';
 
 // ── User Dashboard ────────────────────────────────────────────────────────────
 export const dashboardRouter = Router();
@@ -91,6 +98,12 @@ dashboardRouter.post(
 export const adminRouter = Router();
 
 adminRouter.get('/stats', authenticate, adminOnly, getDashboardStats);
+
+adminRouter.get('/fx/rates', authenticate, adminOnly, getFxRates);
+adminRouter.post('/fx/rates', authenticate, adminOnly, overrideFxRate);
+adminRouter.post('/fx/sync', authenticate, adminOnly, triggerFxSync);
+adminRouter.get('/currencies', authenticate, adminOnly, getSupportedCurrencies);
+adminRouter.patch('/currencies/:code', authenticate, adminOnly, updateSupportedCurrency);
 adminRouter.get('/settings', authenticate, adminOnly, getAdminPlatformSettings);
 
 adminRouter.patch(

@@ -1,17 +1,24 @@
 import { Request, Response } from 'express';
 import { Prisma, CampStatus, CampRegistrationStatus } from '@prisma/client';
 import prisma from '../config/prisma';
-import { stripLegacyCampPrice } from '../lib/campSerialization';
 import { mapForeignKeyDeleteError } from '../lib/prismaDeleteErrors';
-import { parsePlatformCurrency } from '../lib/parsePlatformCurrency';
 import { buildMeta, parseAdminPagination } from '../lib/pagination';
+import { withPrices } from '../lib/priceSerialization';
+import { serializePaymentAmount } from '../lib/priceSerialization';
+import { currencyOf } from '../middleware/currency.middleware';
+import { BASE_CURRENCY, parseToMinor } from '../lib/money';
 import { catchAsync, AppError } from '../middleware/error.middleware';
 import { AuthRequest, ApplicantDetails } from '../types';
 import {
+  BLOCKED_NEW_REGISTRATION_MESSAGE,
+  blockedNewRegistrationReason,
   computePaymentExpiresAt,
+  computeTierAvailability,
   getSeatsTaken,
+  getSeatsTakenByCamp,
+  getUnitsHeldByTier,
+  isCampOpenForRegistration,
   isRegistrationActiveHold,
-  canReuseRegistrationRow,
   whereCountsTowardCampInventory,
   whereCountsTowardTierInventory,
 } from '../services/campInventory.service';
@@ -34,6 +41,175 @@ const publicCampInclude = {
   },
   _count: { select: { registrations: true } },
 };
+
+/**
+ * Camp money lives entirely on its tiers, and so does availability: a camp can
+ * report seats remaining while every tier is unbookable because none of them
+ * fits in the space left.
+ */
+async function serializeCamps<
+  T extends {
+    id: string;
+    status: string;
+    capacity: number;
+    tiers?: Array<{ id: string; priceMinor: bigint; seatsPerUnit: number; maxUnits: number | null }>;
+  },
+>(camps: T[], currency: string) {
+  const ids = camps.map((c) => c.id);
+  const [seatsByCamp, unitsByTier] = await Promise.all([
+    getSeatsTakenByCamp(ids),
+    getUnitsHeldByTier(ids),
+  ]);
+
+  return Promise.all(
+    camps.map(async (camp) => {
+      const seatsTaken = seatsByCamp.get(camp.id) ?? 0;
+      const seatsRemaining = Math.max(camp.capacity - seatsTaken, 0);
+      const campIsOpen = isCampOpenForRegistration(camp.status);
+
+      const tiers = camp.tiers
+        ? await withPrices(
+            camp.tiers.map((tier) => ({
+              ...tier,
+              ...computeTierAvailability({
+                campIsOpen,
+                seatsRemaining,
+                seatsPerUnit: tier.seatsPerUnit,
+                maxUnits: tier.maxUnits,
+                unitsSold: unitsByTier.get(tier.id) ?? 0,
+              }),
+            })),
+            currency
+          )
+        : undefined;
+
+      return {
+        ...camp,
+        ...(tiers ? { tiers } : {}),
+        seatsTaken,
+        seatsRemaining,
+        isOpenForRegistration: campIsOpen,
+        hasBookableTier: (tiers ?? []).some((t) => (t as { isAvailable?: boolean }).isAvailable),
+      };
+    })
+  );
+}
+
+async function serializeCamp<
+  T extends {
+    id: string;
+    status: string;
+    capacity: number;
+    tiers?: Array<{ id: string; priceMinor: bigint; seatsPerUnit: number; maxUnits: number | null }>;
+  },
+>(camp: T, currency: string) {
+  const [serialized] = await serializeCamps([camp], currency);
+  return serialized;
+}
+
+/** Payment rows carry a locked presentment quote; expose it as amount+currency. */
+function withPaymentAmount<T extends { payment?: unknown | null }>(row: T): T {
+  if (!row.payment) return row;
+  return {
+    ...row,
+    payment: {
+      ...(row.payment as object),
+      ...serializePaymentAmount(row.payment as Parameters<typeof serializePaymentAmount>[0]),
+    },
+  };
+}
+
+export const PARTICIPANT_NAME_MAX = 160;
+export const PARTICIPANT_TEXT_MAX = 500;
+
+export interface ParticipantInput {
+  fullName?: string;
+  age?: number | string | null;
+  relationship?: string | null;
+  dietaryRequirements?: string | null;
+  medicalConditions?: string | null;
+  emergencyContactName?: string | null;
+  emergencyContactPhone?: string | null;
+}
+
+function participantText(raw: unknown, field: string, max: number): string | null {
+  if (raw === undefined || raw === null || String(raw).trim() === '') return null;
+  const value = String(raw).trim();
+  if (value.length > max) throw new AppError(`${field} must be at most ${max} characters.`, 400);
+  return value;
+}
+
+function participantAge(raw: unknown): number | null {
+  if (raw === undefined || raw === null || String(raw).trim() === '') return null;
+  const age = Number(raw);
+  if (!Number.isInteger(age) || age < 0 || age > 120) {
+    throw new AppError('Each attendee age must be a whole number between 0 and 120.', 400);
+  }
+  return age;
+}
+
+/**
+ * The manifest is the roster the organiser works from at the gate, so it must
+ * name exactly as many people as the tier covers — a count alone is not enough
+ * to run a camp. Falls back to the legacy applicantDetails shape so older
+ * clients keep working while the frontend catches up.
+ */
+function buildManifest(
+  participants: ParticipantInput[] | undefined,
+  applicantDetails: ApplicantDetails | undefined,
+  seats: number,
+  tierLabel: string
+): Prisma.CampParticipantCreateWithoutRegistrationInput[] {
+  let source: ParticipantInput[] = Array.isArray(participants) ? participants : [];
+
+  if (source.length === 0 && applicantDetails) {
+    source = [
+      {
+        fullName: applicantDetails.fullName,
+        dietaryRequirements: applicantDetails.dietaryRestrictions,
+        medicalConditions: applicantDetails.medicalConditions,
+        emergencyContactName: applicantDetails.emergencyContact?.name,
+        emergencyContactPhone: applicantDetails.emergencyContact?.phone,
+      },
+      ...(applicantDetails.partyMembers ?? []).map((m) => ({
+        fullName: m.fullName,
+        age: m.age,
+        relationship: m.relationship,
+      })),
+    ];
+  }
+
+  const named = source.filter((p) => String(p?.fullName ?? '').trim() !== '');
+  if (named.length !== seats) {
+    throw new AppError(
+      `The "${tierLabel}" package covers ${seats} ${seats === 1 ? 'person' : 'people'}. ` +
+        `Please provide ${seats} named attendee(s); received ${named.length}.`,
+      400
+    );
+  }
+
+  const seen = new Set<string>();
+  return named.map((p, index) => {
+    const fullName = participantText(p.fullName, 'Attendee name', PARTICIPANT_NAME_MAX)!;
+    const key = fullName.toLowerCase();
+    if (seen.has(key)) {
+      throw new AppError(`Attendee "${fullName}" is listed more than once.`, 400);
+    }
+    seen.add(key);
+
+    return {
+      fullName,
+      isLead: index === 0,
+      order: index,
+      age: participantAge(p.age),
+      relationship: participantText(p.relationship, 'Relationship', PARTICIPANT_NAME_MAX),
+      dietaryRequirements: participantText(p.dietaryRequirements, 'Dietary requirements', PARTICIPANT_TEXT_MAX),
+      medicalConditions: participantText(p.medicalConditions, 'Medical conditions', PARTICIPANT_TEXT_MAX),
+      emergencyContactName: participantText(p.emergencyContactName, 'Emergency contact name', PARTICIPANT_NAME_MAX),
+      emergencyContactPhone: participantText(p.emergencyContactPhone, 'Emergency contact phone', PARTICIPANT_NAME_MAX),
+    };
+  });
+}
 
 const ADMIN_CAMP_SEARCH_MAX_LEN = 100;
 
@@ -80,7 +256,6 @@ export const getAllCampsAdmin = catchAsync(async (req: Request, res: Response) =
         title: true,
         description: true,
         location: true,
-        currency: true,
         category: true,
         capacity: true,
         startDate: true,
@@ -105,10 +280,20 @@ export const getAllCampsAdmin = catchAsync(async (req: Request, res: Response) =
     prisma.camp.count({ where }),
   ]);
 
+  const seatsByCamp = await getSeatsTakenByCamp(camps.map((c) => c.id));
+
   res.json({
     success: true,
     message: 'Camps fetched.',
-    data: camps,
+    // _count.registrations counts rows; seats is what capacity is measured in.
+    data: camps.map((camp) => {
+      const seatsTaken = seatsByCamp.get(camp.id) ?? 0;
+      return {
+        ...camp,
+        seatsTaken,
+        seatsRemaining: Math.max(camp.capacity - seatsTaken, 0),
+      };
+    }),
     meta: buildMeta(total, page, limit),
   });
 });
@@ -118,29 +303,22 @@ export const getAllCampsAdmin = catchAsync(async (req: Request, res: Response) =
 // ─────────────────────────────────────────────
 
 // GET /api/camps — List all upcoming/ongoing camps
-export const getAllCamps = catchAsync(async (_req: Request, res: Response) => {
+export const getAllCamps = catchAsync(async (req: AuthRequest, res: Response) => {
   const camps = await prisma.camp.findMany({
     where: { status: { in: ['UPCOMING', 'ONGOING'] } },
     orderBy: { startDate: 'asc' },
     include: publicCampInclude,
   });
 
-  const withSeats = await Promise.all(
-    camps.map(async (camp) => {
-      const seatsTaken = await getSeatsTaken(camp.id);
-      return {
-        ...stripLegacyCampPrice(camp),
-        seatsTaken,
-        seatsRemaining: Math.max(camp.capacity - seatsTaken, 0),
-      };
-    })
-  );
-
-  res.json({ success: true, message: 'Camps fetched.', data: withSeats });
+  res.json({
+    success: true,
+    message: 'Camps fetched.',
+    data: await serializeCamps(camps, currencyOf(req)),
+  });
 });
 
 // GET /api/camps/current — Next upcoming camp (the "Annual Camping Programme" featured event)
-export const getCurrentCamp = catchAsync(async (_req: Request, res: Response) => {
+export const getCurrentCamp = catchAsync(async (req: AuthRequest, res: Response) => {
   const camp = await prisma.camp.findFirst({
     where: { status: 'UPCOMING' },
     orderBy: { startDate: 'asc' },
@@ -152,21 +330,15 @@ export const getCurrentCamp = catchAsync(async (_req: Request, res: Response) =>
     return;
   }
 
-  const seatsTaken = await getSeatsTaken(camp.id);
-
   res.json({
     success: true,
     message: 'Current camp fetched.',
-    data: {
-      ...stripLegacyCampPrice(camp),
-      seatsTaken,
-      seatsRemaining: Math.max(camp.capacity - seatsTaken, 0),
-    },
+    data: await serializeCamp(camp, currencyOf(req)),
   });
 });
 
 // GET /api/camps/:id — Single camp detail
-export const getCampById = catchAsync(async (req: Request, res: Response) => {
+export const getCampById = catchAsync(async (req: AuthRequest, res: Response) => {
   const camp = await prisma.camp.findUnique({
     where: { id: req.params.id },
     include: publicCampInclude,
@@ -174,16 +346,10 @@ export const getCampById = catchAsync(async (req: Request, res: Response) => {
 
   if (!camp) throw new AppError('Camp not found.', 404);
 
-  const seatsTaken = await getSeatsTaken(camp.id);
-
   res.json({
     success: true,
     message: 'Camp fetched.',
-    data: {
-      ...stripLegacyCampPrice(camp),
-      seatsTaken,
-      seatsRemaining: Math.max(camp.capacity - seatsTaken, 0),
-    },
+    data: await serializeCamp(camp, currencyOf(req)),
   });
 });
 
@@ -207,23 +373,22 @@ export const getCampById = catchAsync(async (req: Request, res: Response) => {
 export const registerForCamp = catchAsync(async (req: AuthRequest, res: Response) => {
   const userId = req.user!.id;
   const campId = req.params.id;
-  const { tierId, applicantDetails } = req.body as {
+  const { tierId, applicantDetails, participants: participantsInput } = req.body as {
     tierId?: string;
     applicantDetails?: ApplicantDetails;
+    participants?: ParticipantInput[];
   };
 
   const registration = await prisma.$transaction(async (tx) => {
-    // 1. Lock the camp row to serialize concurrent registrations on this camp.
-    //    Held until the transaction commits / rolls back. Other camps are unaffected.
+    // Lock the camp row so concurrent registrations on this camp serialize.
     await tx.$queryRaw`SELECT id FROM "camps" WHERE id = ${campId} FOR UPDATE`;
 
-    // 2. Re-load camp + tiers from the locked snapshot.
     const camp = await tx.camp.findUnique({
       where: { id: campId },
       include: { tiers: true },
     });
     if (!camp) throw new AppError('Camp not found.', 404);
-    if (camp.status !== 'UPCOMING') {
+    if (!isCampOpenForRegistration(camp.status)) {
       throw new AppError('This camp is no longer accepting applications.', 400);
     }
     if (camp.tiers.length === 0) {
@@ -233,30 +398,23 @@ export const registerForCamp = catchAsync(async (req: AuthRequest, res: Response
       );
     }
 
-    // 3. Validate tier selection.
     if (!tierId) throw new AppError('Please select a participation tier.', 400);
     const tier = camp.tiers.find((t) => t.id === tierId) ?? null;
     if (!tier) throw new AppError('Invalid tier selected.', 400);
 
     const participantCount = tier.seatsPerUnit;
-
-    // 4. Validate party size for multi-seat tiers (e.g. Couple needs 1 party member).
-    if (participantCount > 1) {
-      const partySize = applicantDetails?.partyMembers?.length ?? 0;
-      if (partySize < participantCount - 1) {
-        throw new AppError(
-          `The "${tier.label}" package covers ${participantCount} people. Please list ${
-            participantCount - 1
-          } additional party member(s).`,
-          400
-        );
-      }
-    }
-
     const now = new Date();
-    const paymentExpiresAt = computePaymentExpiresAt(now);
 
-    // 5. Tier cap (only applies when maxUnits is configured on the tier).
+    // One checkout at a time per user per camp — otherwise a single account
+    // could hold unlimited inventory through repeated unpaid holds.
+    const existingForUser = await tx.campRegistration.findMany({
+      where: { userId, campId },
+      include: { payment: { select: { status: true } } },
+    });
+    const blocked = blockedNewRegistrationReason(existingForUser, now);
+    if (blocked) throw new AppError(BLOCKED_NEW_REGISTRATION_MESSAGE[blocked], 400);
+
+    // Tier cap counts purchases, not seats.
     if (tier.maxUnits != null) {
       const heldUnits = await tx.campRegistration.count({
         where: whereCountsTowardTierInventory(tier.id, now),
@@ -266,84 +424,24 @@ export const registerForCamp = catchAsync(async (req: AuthRequest, res: Response
       }
     }
 
-    // 6. Camp seat capacity (sums participantCount across CONFIRMED + active holds).
+    // Camp capacity counts seats: SUM(participantCount) over holding rows.
     const seatsAgg = await tx.campRegistration.aggregate({
       where: whereCountsTowardCampInventory(campId, now),
       _sum: { participantCount: true },
     });
     const seatsTaken = seatsAgg._sum.participantCount ?? 0;
-    if (seatsTaken + participantCount > camp.capacity) {
-      throw new AppError('Not enough spots remaining for this selection.', 400);
-    }
-
-    // 7. Existing-row dispatch (at most one row per (userId, campId) due to @@unique).
-    const existing = await tx.campRegistration.findUnique({
-      where: { userId_campId: { userId, campId } },
-      include: { payment: true },
-    });
-
-    if (existing) {
-      // (a) Already paid — block silently.
-      if (existing.status === CampRegistrationStatus.CONFIRMED) {
-        throw new AppError('You have already applied for this camp.', 400);
-      }
-
-      // (b) Defensive: a SUCCESS payment exists but the registration is not
-      //     CONFIRMED. This is the post-expiry-payment / pending-refund state
-      //     and needs admin review before the user re-applies.
-      if (existing.payment?.status === 'SUCCESS') {
-        throw new AppError(
-          'A previous payment is pending review. Please contact support before re-applying.',
-          400
-        );
-      }
-
-      // (c) Still-active hold — guide user to complete the existing checkout.
-      if (isRegistrationActiveHold(existing, now)) {
-        throw new AppError(
-          'You have a pending application for this camp. Complete payment for it or wait for it to expire before re-applying.',
-          400
-        );
-      }
-
-      // (d) Reusable row: EXPIRED, CANCELLED, or PENDING_PAYMENT past deadline.
-      if (canReuseRegistrationRow(existing, now)) {
-        // Detach any prior payment so Phase 5 can attach a fresh one to this
-        // registration (Payment.campRegistrationId is @unique). PENDING is also
-        // promoted to FAILED so it doesn't sit pending forever.
-        if (existing.payment) {
-          await tx.payment.update({
-            where: { id: existing.payment.id },
-            data: {
-              campRegistrationId: null,
-              ...(existing.payment.status === 'PENDING' ? { status: 'FAILED' as const } : {}),
-            },
-          });
-        }
-
-        const reset = await tx.campRegistration.update({
-          where: { id: existing.id },
-          data: {
-            tierId: tier.id,
-            participantCount,
-            applicantDetails: (applicantDetails ?? Prisma.JsonNull) as Prisma.InputJsonValue,
-            status: CampRegistrationStatus.PENDING_PAYMENT,
-            paymentExpiresAt,
-          },
-          include: { camp: true, tier: true },
-        });
-
-        return reset;
-      }
-
-      // Defensive: should be unreachable — every enum value is handled above.
+    const seatsRemaining = Math.max(camp.capacity - seatsTaken, 0);
+    if (participantCount > seatsRemaining) {
       throw new AppError(
-        'Registration is in an unexpected state. Please contact support.',
-        500
+        seatsRemaining === 0
+          ? 'This camp is fully booked.'
+          : `Only ${seatsRemaining} seat(s) remain, and the "${tier.label}" package needs ${participantCount}.`,
+        400
       );
     }
 
-    // 8. No existing row — create a fresh PENDING_PAYMENT hold.
+    const manifest = buildManifest(participantsInput, applicantDetails, participantCount, tier.label);
+
     const created = await tx.campRegistration.create({
       data: {
         userId,
@@ -352,9 +450,14 @@ export const registerForCamp = catchAsync(async (req: AuthRequest, res: Response
         participantCount,
         applicantDetails: (applicantDetails ?? Prisma.JsonNull) as Prisma.InputJsonValue,
         status: CampRegistrationStatus.PENDING_PAYMENT,
-        paymentExpiresAt,
+        paymentExpiresAt: computePaymentExpiresAt(now),
+        participants: { create: manifest },
       },
-      include: { camp: true, tier: true },
+      include: {
+        camp: true,
+        tier: true,
+        participants: { orderBy: { order: 'asc' } },
+      },
     });
 
     return created;
@@ -363,10 +466,7 @@ export const registerForCamp = catchAsync(async (req: AuthRequest, res: Response
   res.status(201).json({
     success: true,
     message: 'Application submitted. Please complete payment within 60 minutes.',
-    data: {
-      ...registration,
-      camp: stripLegacyCampPrice(registration.camp),
-    },
+    data: registration,
   });
 });
 
@@ -376,39 +476,52 @@ export const registerForCamp = catchAsync(async (req: AuthRequest, res: Response
 // camp page (apply button vs. "Complete Payment" countdown vs. "Confirmed" vs.
 // "Expired — re-apply"). Returns `data: null` with 200 if the user has no row
 // for this camp, so the client has a single response shape to handle.
-export const getMyCampRegistration = catchAsync(async (req: AuthRequest, res: Response) => {
+export const getMyCampRegistrations = catchAsync(async (req: AuthRequest, res: Response) => {
   const userId = req.user!.id;
   const { id: campId } = req.params;
 
-  const registration = await prisma.campRegistration.findUnique({
-    where: { userId_campId: { userId, campId } },
-    select: {
-      id: true,
-      campId: true,
-      tierId: true,
-      participantCount: true,
-      applicantDetails: true,
-      status: true,
-      paymentExpiresAt: true,
-      createdAt: true,
-      updatedAt: true,
+  const registrations = await prisma.campRegistration.findMany({
+    where: { userId, campId },
+    orderBy: { createdAt: 'desc' },
+    include: {
       camp: true,
-      tier: { select: { id: true, label: true, price: true, seatsPerUnit: true } },
-      payment: { select: { status: true, amount: true, createdAt: true } },
+      tier: { select: { id: true, label: true, priceMinor: true, seatsPerUnit: true } },
+      participants: { orderBy: { order: 'asc' } },
+      payment: {
+        select: {
+          status: true,
+          presentmentAmountMinor: true,
+          presentmentCurrency: true,
+          baseAmountMinor: true,
+          baseCurrency: true,
+          createdAt: true,
+        },
+      },
     },
   });
 
-  if (!registration) {
-    res.json({ success: true, message: 'No registration found.', data: null });
-    return;
-  }
+  const now = new Date();
+  const blockedReason = blockedNewRegistrationReason(registrations, now);
+  const confirmed = registrations.filter((r) => r.status === 'CONFIRMED');
 
   res.json({
     success: true,
-    message: 'Registration fetched.',
-    data: { ...registration, camp: stripLegacyCampPrice(registration.camp) },
+    message: 'Registrations fetched.',
+    data: {
+      registrations: registrations.map(withPaymentAmount),
+      // The row the user still has to act on, if any.
+      actionable: [registrations.find((r) => isRegistrationActiveHold(r, now) && r.status !== 'CONFIRMED')]
+        .filter(Boolean)
+        .map((r) => withPaymentAmount(r!))[0] ?? null,
+      confirmedUnits: confirmed.length,
+      confirmedSeats: confirmed.reduce((sum, r) => sum + r.participantCount, 0),
+      canBookAnother: blockedReason === null,
+      blockedReason,
+      blockedMessage: blockedReason ? BLOCKED_NEW_REGISTRATION_MESSAGE[blockedReason] : null,
+    },
   });
 });
+
 
 // ─────────────────────────────────────────────
 // ADMIN ROUTES — CAMPS
@@ -421,7 +534,6 @@ export const createCamp = catchAsync(async (req: AuthRequest, res: Response) => 
   const thumbnail = (req.file as Express.Multer.File & { path: string })?.path;
 
   const parsedBenefits = parseStringArray(benefits);
-  const parsedCurrency = parsePlatformCurrency(currency);
   const parsedCategory = parseCampCategory(category, true)!;
 
   const camp = await prisma.camp.create({
@@ -433,7 +545,6 @@ export const createCamp = catchAsync(async (req: AuthRequest, res: Response) => 
       capacity: parseInt(capacity),
       startDate: new Date(startDate),
       endDate: new Date(endDate),
-      ...(parsedCurrency !== undefined && { currency: parsedCurrency }),
       benefits: parsedBenefits,
       thumbnail,
     },
@@ -443,7 +554,7 @@ export const createCamp = catchAsync(async (req: AuthRequest, res: Response) => 
   res.status(201).json({
     success: true,
     message: 'Camp created.',
-    data: stripLegacyCampPrice(camp),
+    data: camp,
   });
 });
 
@@ -478,16 +589,13 @@ export const updateCamp = catchAsync(async (req: AuthRequest, res: Response) => 
       ...(startDate && { startDate: new Date(startDate) }),
       ...(endDate && { endDate: new Date(endDate) }),
       ...(status && { status }),
-      ...(currency !== undefined && currency !== '' && {
-        currency: parsePlatformCurrency(currency, true),
-      }),
       ...(benefits !== undefined && { benefits: parseStringArray(benefits) }),
       ...(thumbnail && { thumbnail }),
     },
   });
 
   scheduleChatReindexCamp(camp.id);
-  res.json({ success: true, message: 'Camp updated.', data: stripLegacyCampPrice(camp) });
+  res.json({ success: true, message: 'Camp updated.', data: camp });
 });
 
 // DELETE /api/camps/:id — Deletes camp; cascades tiers, images, registrations.
@@ -568,8 +676,9 @@ export const getCampParticipants = catchAsync(async (req: Request, res: Response
         createdAt: true,
         updatedAt: true,
         user: { select: { id: true, firstName: true, lastName: true, email: true } },
-        tier: { select: { id: true, label: true, price: true, seatsPerUnit: true } },
-        payment: { select: { status: true, amount: true, createdAt: true } },
+        tier: { select: { id: true, label: true, priceMinor: true, seatsPerUnit: true } },
+        participants: { orderBy: { order: 'asc' } },
+        payment: { select: { status: true, presentmentAmountMinor: true, presentmentCurrency: true, baseAmountMinor: true, baseCurrency: true, createdAt: true } },
       },
       orderBy: { createdAt: 'desc' },
       skip,
@@ -581,7 +690,7 @@ export const getCampParticipants = catchAsync(async (req: Request, res: Response
   res.json({
     success: true,
     message: 'Participants fetched.',
-    data: registrations,
+    data: registrations.map(withPaymentAmount),
     meta: buildMeta(total, page, limit),
   });
 });
@@ -610,7 +719,7 @@ export const createCampTier = catchAsync(async (req: AuthRequest, res: Response)
         campId,
         label: labelNorm,
         description,
-        price: parseFloat(price),
+        priceMinor: parseToMinor(String(price), BASE_CURRENCY),
         inclusions: parseStringArray(inclusions),
         seatsPerUnit: seatsPerUnit ? parseInt(seatsPerUnit) : 1,
         maxUnits: maxUnits ? parseInt(maxUnits) : null,
@@ -641,6 +750,21 @@ export const updateCampTier = catchAsync(async (req: AuthRequest, res: Response)
     label !== undefined && typeof label === 'string' ? label.trim() : undefined;
   if (labelNorm !== undefined && !labelNorm) {
     throw new AppError('label cannot be empty.', 400);
+  }
+
+  // participantCount is copied onto each registration at booking time, so
+  // changing seatsPerUnit later would leave capacity maths using stale values.
+  if (seatsPerUnit !== undefined && parseInt(seatsPerUnit) !== existing.seatsPerUnit) {
+    const holding = await prisma.campRegistration.count({
+      where: whereCountsTowardTierInventory(tierId),
+    });
+    if (holding > 0) {
+      throw new AppError(
+        `Cannot change seats per unit while ${holding} registration(s) hold this tier. ` +
+          'Create a new tier instead so existing bookings keep their seat count.',
+        400
+      );
+    }
   }
 
   try {

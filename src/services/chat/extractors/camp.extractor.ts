@@ -2,6 +2,7 @@ import { ChatKnowledgeSourceType } from '@prisma/client';
 import prisma from '../../../config/prisma';
 import { CHAT_FRONTEND_PATHS } from '../../../config/chat';
 import { KnowledgeDocumentChunk } from '../../../types/chat.types';
+import { BASE_CURRENCY, formatMoney } from '../../../lib/money';
 
 function formatList(label: string, items: string[]): string {
   if (items.length === 0) return '';
@@ -25,7 +26,7 @@ export async function extractCampChunks(campId: string): Promise<KnowledgeDocume
     camp.category ? `Category: ${camp.category}` : '',
     `Location: ${camp.location}`,
     `Dates: ${camp.startDate.toISOString().slice(0, 10)} to ${camp.endDate.toISOString().slice(0, 10)}`,
-    `Currency: ${camp.currency}`,
+    `Prices shown in ${BASE_CURRENCY}`,
     `Capacity: ${camp.capacity} seats`,
     '',
     camp.description,
@@ -51,7 +52,7 @@ export async function extractCampChunks(campId: string): Promise<KnowledgeDocume
       `Camp: ${camp.title}`,
       `Tier: ${tier.label}`,
       tier.description ?? '',
-      `Price: ${tier.price} ${camp.currency}`,
+      `Price: ${formatMoney(tier.priceMinor, BASE_CURRENCY)}`,
       `Seats per registration: ${tier.seatsPerUnit}`,
       tier.maxUnits != null ? `Maximum units available: ${tier.maxUnits}` : null,
       tier.isFeatured ? 'Featured tier on the camp page.' : null,

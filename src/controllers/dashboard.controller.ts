@@ -1,6 +1,6 @@
 import { Response } from 'express';
 import prisma from '../config/prisma';
-import { stripLegacyCampPrice } from '../lib/campSerialization';
+import { serializePaymentAmount } from '../lib/priceSerialization';
 import { catchAsync, AppError } from '../middleware/error.middleware';
 import { AuthRequest } from '../types';
 import {
@@ -11,6 +11,18 @@ import {
 } from '../services/programProgress.service';
 
 // GET /api/dashboard — User's full dashboard data
+/** Payment rows carry a locked presentment quote; expose it as amount+currency. */
+function withPaymentAmount<T extends { payment?: unknown | null }>(row: T): T {
+  if (!row.payment) return row;
+  return {
+    ...row,
+    payment: {
+      ...(row.payment as object),
+      ...serializePaymentAmount(row.payment as Parameters<typeof serializePaymentAmount>[0]),
+    },
+  };
+}
+
 export const getDashboard = catchAsync(async (req: AuthRequest, res: Response) => {
   const userId = req.user!.id;
 
@@ -21,7 +33,7 @@ export const getDashboard = catchAsync(async (req: AuthRequest, res: Response) =
         program: {
           include: { _count: { select: { weeks: true } } },
         },
-        payment: { select: { status: true, amount: true, createdAt: true } },
+        payment: { select: { status: true, presentmentAmountMinor: true, presentmentCurrency: true, baseAmountMinor: true, baseCurrency: true, createdAt: true } },
       },
       orderBy: { createdAt: 'desc' },
     }),
@@ -44,7 +56,7 @@ export const getDashboard = catchAsync(async (req: AuthRequest, res: Response) =
         createdAt: true,
         updatedAt: true,
         camp: true,
-        payment: { select: { status: true, amount: true, createdAt: true } },
+        payment: { select: { status: true, presentmentAmountMinor: true, presentmentCurrency: true, baseAmountMinor: true, baseCurrency: true, createdAt: true } },
       },
       orderBy: { createdAt: 'desc' },
     }),
@@ -53,7 +65,7 @@ export const getDashboard = catchAsync(async (req: AuthRequest, res: Response) =
       where: { userId },
       include: {
         service: true,
-        payment: { select: { status: true, amount: true } },
+        payment: { select: { status: true, presentmentAmountMinor: true, presentmentCurrency: true, baseAmountMinor: true, baseCurrency: true } },
       },
       orderBy: { createdAt: 'desc' },
     }),
@@ -75,13 +87,17 @@ export const getDashboard = catchAsync(async (req: AuthRequest, res: Response) =
 
   const campRegistrationsSanitized = campRegistrations.map((r) => ({
     ...r,
-    camp: stripLegacyCampPrice(r.camp),
+    camp: r.camp,
   }));
 
   res.json({
     success: true,
     message: 'Dashboard data fetched.',
-    data: { purchases: purchasesWithProgress, campRegistrations: campRegistrationsSanitized, consultations },
+    data: {
+      purchases: purchasesWithProgress.map(withPaymentAmount),
+      campRegistrations: campRegistrationsSanitized.map(withPaymentAmount),
+      consultations: consultations.map(withPaymentAmount),
+    },
   });
 });
 

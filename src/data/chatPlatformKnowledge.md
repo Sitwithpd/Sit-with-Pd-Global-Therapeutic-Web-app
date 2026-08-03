@@ -34,7 +34,7 @@ To buy a program:
 
 1. Browse `/programs` and open a program you are interested in.
 2. Sign in or create an account if prompted.
-3. Start checkout and pay through the site’s payment provider (Paystack or Flutterwave — see Payments below).
+3. Start checkout and pay through the site’s payment provider (Flutterwave — see Payments below).
 4. After payment succeeds, you are enrolled in that program.
 
 Program content (videos, readings, modules) is accessed from your dashboard after purchase, not from the public marketing page alone.
@@ -89,7 +89,7 @@ General flow:
 4. After booking, the consultation may enter a **pending payment** state.
 5. Complete payment within approximately **one hour** using the payment link (email or on-site flow, depending on configuration).
 
-Consultations use the same payment providers as programs and camps (Paystack or Flutterwave). Default currency is often NGN but may vary by checkout.
+Consultations use the same payment provider as programs and camps (Flutterwave). Prices are set in GBP and shown in your selected currency at checkout.
 
 For booking help, visit `/consultations` or `/contact`.
 
@@ -97,7 +97,7 @@ For booking help, visit `/consultations` or `/contact`.
 
 ## Payments on Sit With PD
 
-The platform supports **Paystack** and **Flutterwave**. The checkout flow may offer one or both depending on configuration. Default currency is often NGN (Nigerian Naira) but USD or other currencies may be available on specific checkouts.
+The platform uses **Flutterwave**. Prices are set in GBP (the platform's base currency) and converted to your selected currency for display and checkout. Supported currencies vary; GBP is always available.
 
 Payment types include:
 
@@ -108,7 +108,7 @@ Payment types include:
 Typical checkout steps:
 
 1. User initiates purchase, registration, or booking.
-2. The site starts payment and redirects to Paystack or Flutterwave checkout.
+2. The site starts payment and redirects to Flutterwave checkout.
 3. After paying, the provider notifies the platform and the purchase, camp registration, or consultation is updated.
 4. The user can verify payment status on the site’s payment verification page after redirect.
 

@@ -2,10 +2,12 @@ import { Request, Response } from 'express';
 import { ConsultationStatus, Prisma } from '@prisma/client';
 import prisma from '../config/prisma';
 import { buildMeta, parseAdminPagination } from '../lib/pagination';
-import { parsePlatformCurrency } from '../lib/parsePlatformCurrency';
 import { catchAsync, AppError } from '../middleware/error.middleware';
 import { AuthRequest } from '../types';
 import { serializeFormatTag, tagJoinInclude, withSerializedTags } from '../lib/serializeTags';
+import { withPrice, withPrices, serializePaymentAmount } from '../lib/priceSerialization';
+import { currencyOf } from '../middleware/currency.middleware';
+import { BASE_CURRENCY, parseToMinor } from '../lib/money';
 import { resolveFormatTagId, syncConsultationServiceTags } from '../services/tag.service';
 import {
   scheduleChatReindexConsultationService,
@@ -32,13 +34,17 @@ function serializeService(service: ServiceWithRelations) {
   return { ...rest, format: serializeFormatTag(formatTag) };
 }
 
-async function findServiceForResponse(id: string) {
+async function localizeService(service: ServiceWithRelations, currency: string) {
+  return withPrice(serializeService(service), currency);
+}
+
+async function findServiceForResponse(id: string, currency: string) {
   const service = await prisma.consultationService.findUnique({
     where: { id },
     include: serviceRelationInclude,
   });
   if (!service) throw new AppError('Service not found.', 404);
-  return serializeService(service);
+  return localizeService(service, currency);
 }
 
 /**
@@ -115,19 +121,23 @@ async function assertCalEventTypeIdAvailable(
 // ─────────────────────────────────────────────
 
 // GET /api/consultations/services — List all active consultation services
-export const getServices = catchAsync(async (_req: Request, res: Response) => {
+export const getServices = catchAsync(async (req: AuthRequest, res: Response) => {
   const services = await prisma.consultationService.findMany({
     where: { isActive: true },
     orderBy: { createdAt: 'asc' },
     include: serviceRelationInclude,
   });
 
-  res.json({ success: true, message: 'Services fetched.', data: services.map(serializeService) });
+  res.json({
+    success: true,
+    message: 'Services fetched.',
+    data: await withPrices(services.map(serializeService), currencyOf(req)),
+  });
 });
 
 // GET /api/consultations/services/:id — Single service detail
-export const getServiceById = catchAsync(async (req: Request, res: Response) => {
-  const service = await findServiceForResponse(req.params.id);
+export const getServiceById = catchAsync(async (req: AuthRequest, res: Response) => {
+  const service = await findServiceForResponse(req.params.id, currencyOf(req));
 
   res.json({ success: true, message: 'Service fetched.', data: service });
 });
@@ -163,7 +173,7 @@ export const adminManualBookConsultation = catchAsync(async (req: AuthRequest, r
 
   res.status(201).json({
     success: true,
-    message: 'Consultation created (manual). Complete payment via existing Paystack flow if needed.',
+    message: 'Consultation created (manual). Complete payment via the existing checkout flow if needed.',
     data: consultation,
   });
 });
@@ -174,7 +184,7 @@ export const getMyConsultations = catchAsync(async (req: AuthRequest, res: Respo
     where: { userId: req.user!.id },
     include: {
       service: true,
-      payment: { select: { status: true, amount: true } },
+      payment: { select: { status: true, presentmentAmountMinor: true, presentmentCurrency: true, baseAmountMinor: true, baseCurrency: true } },
     },
     orderBy: { createdAt: 'desc' },
   });
@@ -226,7 +236,7 @@ export const getAllConsultations = catchAsync(async (req: Request, res: Response
       include: {
         user: { select: { id: true, firstName: true, lastName: true, email: true } },
         service: true,
-        payment: { select: { status: true, amount: true } },
+        payment: { select: { status: true, presentmentAmountMinor: true, presentmentCurrency: true, baseAmountMinor: true, baseCurrency: true } },
       },
       orderBy: { createdAt: 'desc' },
       skip,
@@ -271,20 +281,17 @@ export const createService = catchAsync(async (req: AuthRequest, res: Response) 
 
   await assertCalEventTypeIdAvailable(parsedCal);
 
-  const parsedCurrency = parsePlatformCurrency(currency);
-
   const coverImageUrl = resolveCoverImageUrl(req);
   const formatTagId = await resolveFormatTagId(req.body.format);
 
   const createData: Prisma.ConsultationServiceUncheckedCreateInput = {
     title,
     description,
-    price: parseFloat(price),
+    priceMinor: parseToMinor(String(price), BASE_CURRENCY),
     duration: parseInt(duration, 10),
     audience: parseBulletList(req.body.audience, 'audience'),
     whatsIncluded: parseBulletList(req.body.whatsIncluded, 'whatsIncluded'),
     ...(parsedCal !== undefined && { calEventTypeId: parsedCal }),
-    ...(parsedCurrency !== undefined && { currency: parsedCurrency }),
     ...(coverImageUrl !== undefined && { coverImageUrl }),
     ...(formatTagId !== undefined && { formatTagId }),
   };
@@ -308,7 +315,7 @@ export const createService = catchAsync(async (req: AuthRequest, res: Response) 
   if (req.body.tags !== undefined) {
     await syncConsultationServiceTags(serviceId, req.body.tags);
   }
-  const created = await findServiceForResponse(serviceId);
+  const created = await findServiceForResponse(serviceId, currencyOf(req));
 
   scheduleChatReindexConsultationService(serviceId);
   res.status(201).json({ success: true, message: 'Service created.', data: created });
@@ -348,9 +355,8 @@ export const updateService = catchAsync(async (req: AuthRequest, res: Response) 
       data: {
         ...(title && { title }),
         ...(description && { description }),
-        ...(price != null && { price: parseFloat(price) }),
-        ...(currency !== undefined && currency !== '' && {
-          currency: parsePlatformCurrency(currency, true),
+        ...(price != null && price !== '' && {
+          priceMinor: parseToMinor(String(price), BASE_CURRENCY),
         }),
         ...(duration != null && { duration: parseInt(duration, 10) }),
         ...(isActive !== undefined && { isActive }),
@@ -380,7 +386,7 @@ export const updateService = catchAsync(async (req: AuthRequest, res: Response) 
   if (req.body.tags !== undefined) {
     await syncConsultationServiceTags(req.params.id, req.body.tags);
   }
-  const service = await findServiceForResponse(req.params.id);
+  const service = await findServiceForResponse(req.params.id, currencyOf(req));
 
   scheduleChatReindexConsultationService(req.params.id);
   res.json({ success: true, message: 'Service updated.', data: service });

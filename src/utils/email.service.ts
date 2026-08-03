@@ -82,7 +82,7 @@ export const sendCampRegistrationEmail = async (
   });
 };
 
-// ── Consultation: Paystack link after Cal.com booking (PENDING_PAYMENT) ───────
+// ── Consultation: payment link after Cal.com booking (PENDING_PAYMENT) ───────
 export const sendConsultationPaymentLinkEmail = async (
   email: string,
   name: string,
@@ -394,6 +394,36 @@ export const sendDashboardFacilitatorMessageEmail = async (params: {
         <p><strong>From:</strong> ${escapeHtml(userName)} &lt;${escapeHtml(userEmail)}&gt;</p>
         <hr style="border:none;border-top:1px solid #eee;margin:16px 0;" />
         <div style="white-space:pre-wrap;">${safe}</div>
+        ${emailBrandSignOff()}
+      </div>
+    `,
+  });
+};
+
+// ── Ops: FX sync failure ──────────────────────────────────────────────────────
+export const sendFxSyncFailureEmail = async (params: {
+  to: string;
+  consecutiveFailures: number;
+  failures: Array<{ currency: string; error: string }>;
+}) => {
+  const { to, consecutiveFailures, failures } = params;
+  const rows = failures
+    .map(
+      (f) =>
+        `<li><strong>${escapeHtml(f.currency)}</strong>: ${escapeHtml(f.error.slice(0, 300))}</li>`
+    )
+    .join('');
+
+  await sendMail({
+    from: transactionalFrom(),
+    to,
+    subject: `FX rate sync failing (${consecutiveFailures} consecutive runs)`,
+    html: `
+      <div style="font-family: sans-serif; max-width: 600px;">
+        <p><strong>Exchange rate sync has failed ${consecutiveFailures} times in a row.</strong></p>
+        <p>Once rates pass the staleness threshold, checkout in non-base currencies
+        will be blocked. Base-currency checkout continues to work.</p>
+        <ul>${rows}</ul>
         ${emailBrandSignOff()}
       </div>
     `,

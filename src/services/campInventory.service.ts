@@ -6,7 +6,7 @@ import prisma from '../config/prisma';
  *
  * Consumed by:
  *   - camp.controller     (registerForCamp + public seat counts)
- *   - payment.controller  (initialize + Paystack webhook for type=CAMP)
+ *   - payment.controller  (initialize + provider webhook for type=CAMP)
  *   - campRegistrationExpiry.service (Phase 6)
  *   - dashboard / admin   (read endpoints)
  *
@@ -123,8 +123,8 @@ type RegistrationLifecycleFields = {
 
 /**
  * True when the registration can still complete checkout. Used by:
- *   - POST /api/payments/initialize (CAMP) before talking to Paystack.
- *   - The Paystack webhook before promoting status to CONFIRMED.
+ *   - POST /api/payments/initialize (CAMP) before talking to the provider.
+ *   - The provider webhook before promoting status to CONFIRMED.
  *
  * Strict by design: requires PENDING_PAYMENT with a deadline in the future.
  * A null deadline is treated as not payable so the webhook can route those
@@ -170,3 +170,134 @@ export function canReuseRegistrationRow(
   }
   return false;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Batched aggregates (list endpoints) — one query per camp set, not per tier
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Seats held per camp, keyed by campId. */
+export async function getSeatsTakenByCamp(
+  campIds: string[],
+  now: Date = new Date()
+): Promise<Map<string, number>> {
+  if (campIds.length === 0) return new Map();
+  const rows = await prisma.campRegistration.groupBy({
+    by: ['campId'],
+    where: { campId: { in: campIds }, ...holdingInventoryFilter(now) },
+    _sum: { participantCount: true },
+  });
+  return new Map(rows.map((r) => [r.campId, r._sum.participantCount ?? 0]));
+}
+
+/** Units held per tier, keyed by tierId. One holding row = one unit. */
+export async function getUnitsHeldByTier(
+  campIds: string[],
+  now: Date = new Date()
+): Promise<Map<string, number>> {
+  if (campIds.length === 0) return new Map();
+  const rows = await prisma.campRegistration.groupBy({
+    by: ['tierId'],
+    where: { campId: { in: campIds }, tierId: { not: null }, ...holdingInventoryFilter(now) },
+    _count: { _all: true },
+  });
+  return new Map(rows.filter((r) => r.tierId).map((r) => [r.tierId as string, r._count._all]));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Tier availability
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type TierUnavailableReason =
+  | 'CAMP_CLOSED'
+  | 'TIER_SOLD_OUT'
+  | 'INSUFFICIENT_SEATS'
+  | null;
+
+export interface TierAvailability {
+  unitsSold: number;
+  unitsRemaining: number | null;
+  isAvailable: boolean;
+  unavailableReason: TierUnavailableReason;
+}
+
+/**
+ * A tier is bookable only when the camp is open, the tier has units left, and
+ * the camp has room for a whole unit. The last condition is why a camp can show
+ * seats remaining while every tier is unavailable.
+ */
+export function computeTierAvailability(input: {
+  campIsOpen: boolean;
+  seatsRemaining: number;
+  seatsPerUnit: number;
+  maxUnits: number | null;
+  unitsSold: number;
+}): TierAvailability {
+  const unitsRemaining =
+    input.maxUnits == null ? null : Math.max(input.maxUnits - input.unitsSold, 0);
+
+  let unavailableReason: TierUnavailableReason = null;
+  if (!input.campIsOpen) unavailableReason = 'CAMP_CLOSED';
+  else if (unitsRemaining !== null && unitsRemaining <= 0) unavailableReason = 'TIER_SOLD_OUT';
+  else if (input.seatsRemaining < input.seatsPerUnit) unavailableReason = 'INSUFFICIENT_SEATS';
+
+  return {
+    unitsSold: input.unitsSold,
+    unitsRemaining,
+    isAvailable: unavailableReason === null,
+    unavailableReason,
+  };
+}
+
+export const CAMP_OPEN_STATUSES = ['UPCOMING'] as const;
+
+export function isCampOpenForRegistration(status: string): boolean {
+  return (CAMP_OPEN_STATUSES as readonly string[]).includes(status);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Multiple units per user
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type BlockedNewRegistrationReason =
+  | 'ACTIVE_HOLD'
+  | 'PAYMENT_PENDING'
+  | 'PAYMENT_UNDER_REVIEW'
+  | null;
+
+/**
+ * A user may hold several registrations for one camp, but only one checkout at
+ * a time — otherwise a single person could hold arbitrary inventory by opening
+ * repeated unpaid holds.
+ */
+export function blockedNewRegistrationReason(
+  registrations: Array<
+    RegistrationLifecycleFields & { payment?: { status: string } | null }
+  >,
+  at: Date = new Date()
+): BlockedNewRegistrationReason {
+  for (const reg of registrations) {
+    // A SUCCESS payment on a non-CONFIRMED row is the pending-refund state.
+    if (reg.status !== CampRegistrationStatus.CONFIRMED && reg.payment?.status === 'SUCCESS') {
+      return 'PAYMENT_UNDER_REVIEW';
+    }
+    if (isRegistrationActiveHold(reg, at) && reg.status !== CampRegistrationStatus.CONFIRMED) {
+      return 'ACTIVE_HOLD';
+    }
+    if (reg.payment?.status === 'PENDING' && reg.status !== CampRegistrationStatus.CONFIRMED) {
+      return 'PAYMENT_PENDING';
+    }
+  }
+  return null;
+}
+
+export const BLOCKED_NEW_REGISTRATION_MESSAGE: Record<
+  Exclude<BlockedNewRegistrationReason, null>,
+  string
+> = {
+  ACTIVE_HOLD:
+    'You have a pending application for this camp. Complete payment for it or wait for it to expire before booking another.',
+  PAYMENT_PENDING:
+    'A payment for this camp is still processing. Wait for it to complete before booking another.',
+  PAYMENT_UNDER_REVIEW:
+    'A previous payment is pending review. Please contact support before booking again.',
+};

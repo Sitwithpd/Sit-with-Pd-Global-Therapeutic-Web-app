@@ -8,6 +8,8 @@ export interface AuthRequest extends Request {
     email: string;
     role: Role;
   };
+  /** Resolved from the X-Req-Currency header; always a supported code. */
+  currency?: string;
 }
 
 // Standard API response shape
@@ -38,24 +40,6 @@ export interface ApplicantDetails {
     relationship?: string;
   }>;
   notes?: string;
-}
-
-// Paystack webhook event shape
-export interface PaystackEvent {
-  event: string;
-  data: {
-    reference: string;
-    amount: number;
-    status: string;
-    metadata: {
-      userId: string;
-      type: 'PROGRAM' | 'CAMP' | 'CONSULTATION';
-      itemId: string;
-    };
-    customer: {
-      email: string;
-    };
-  };
 }
 
 // Flutterwave webhook event shape — sent to /api/payments/flutterwave-webhook.

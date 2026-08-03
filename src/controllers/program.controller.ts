@@ -2,11 +2,13 @@ import { Request, Response } from 'express';
 import { ModuleType, ProgramCategory, Prisma } from '@prisma/client';
 import prisma from '../config/prisma';
 import { mapForeignKeyDeleteError } from '../lib/prismaDeleteErrors';
-import { parsePlatformCurrency } from '../lib/parsePlatformCurrency';
 import { buildMeta, parseAdminPagination } from '../lib/pagination';
 import { catchAsync, AppError } from '../middleware/error.middleware';
 import { AuthRequest } from '../types';
 import { tagJoinInclude, withSerializedTags } from '../lib/serializeTags';
+import { withPrice, withPrices } from '../lib/priceSerialization';
+import { currencyOf } from '../middleware/currency.middleware';
+import { BASE_CURRENCY, parseToMinor } from '../lib/money';
 import { parseVideoLinks } from '../lib/youtubeLinks';
 import { syncProgramTags } from '../services/tag.service';
 import {
@@ -150,7 +152,7 @@ const PROGRAM_SEARCH_MAX_LEN = 100;
  * Shows: Program Name, Type (category), Enrolled count, Price, Status (isPublished).
  * Optional query: search (substring on title/description), category (LEADERS|STUDENTS|PROFESSIONALS).
  */
-export const getAllPrograms = catchAsync(async (req: Request, res: Response) => {
+export const getAllPrograms = catchAsync(async (req: AuthRequest, res: Response) => {
   const rawSearch = req.query.search;
   const search =
     typeof rawSearch === 'string' ? rawSearch.trim().slice(0, PROGRAM_SEARCH_MAX_LEN) : '';
@@ -177,8 +179,7 @@ export const getAllPrograms = catchAsync(async (req: Request, res: Response) => 
       title: true,
       description: true,
       category: true,
-      price: true,
-      currency: true,
+      priceMinor: true,
       thumbnail: true,
       durationWeeks: true,
       hoursPerWeek: true,
@@ -204,7 +205,7 @@ export const getAllPrograms = catchAsync(async (req: Request, res: Response) => 
   res.json({
     success: true,
     message: 'Programs retrieved.',
-    data: programs.map(withSerializedTags),
+    data: await withPrices(programs.map(withSerializedTags), currencyOf(req)),
   });
 });
 
@@ -213,7 +214,7 @@ export const getAllPrograms = catchAsync(async (req: Request, res: Response) => 
  * Public: returns a single published program with its full week → module tree.
  * This is what a user sees on the program detail / content page.
  */
-export const getProgramById = catchAsync(async (req: Request, res: Response) => {
+export const getProgramById = catchAsync(async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
 
   const program = await prisma.program.findUnique({
@@ -243,7 +244,11 @@ export const getProgramById = catchAsync(async (req: Request, res: Response) => 
 
   if (!program) throw new AppError('Program not found.', 404);
 
-  res.json({ success: true, message: 'Program retrieved.', data: withSerializedTags(program) });
+  res.json({
+    success: true,
+    message: 'Program retrieved.',
+    data: await withPrice(withSerializedTags(program), currencyOf(req)),
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -299,7 +304,7 @@ export const adminGetAllPrograms = catchAsync(async (req: AuthRequest, res: Resp
   res.json({
     success: true,
     message: 'All programs retrieved.',
-    data: programs.map(withSerializedTags),
+    data: await withPrices(programs.map(withSerializedTags), currencyOf(req), { admin: true }),
     meta: buildMeta(total, page, limit),
   });
 });
@@ -317,7 +322,7 @@ export const adminGetAllPrograms = catchAsync(async (req: AuthRequest, res: Resp
  *   facilitatorName, facilitatorEmail, thumbnail (file),
  *   weeks (optional JSON string) — see WeekInput type below
  */
-export const createProgram = catchAsync(async (req: Request, res: Response) => {
+export const createProgram = catchAsync(async (req: AuthRequest, res: Response) => {
   const {
     title,
     description,
@@ -337,7 +342,9 @@ export const createProgram = catchAsync(async (req: Request, res: Response) => {
 
   if (!title) throw new AppError('Program name is required.', 400);
   if (!description) throw new AppError('Description is required.', 400);
-  if (!price) throw new AppError('Price is required.', 400);
+  if (price === undefined || price === null || price === '') {
+    throw new AppError('Price is required.', 400);
+  }
 
   const learningOutcomes = parseStringArray(
     req.body.learningOutcomes ?? req.body.learning_outcomes
@@ -347,7 +354,6 @@ export const createProgram = catchAsync(async (req: Request, res: Response) => {
   // YouTube media embeds; array order is the display order.
   const videoLinks = parseVideoLinks(req.body.videoLinks);
   const parsedCategory = parseCategory(category) ?? ProgramCategory.LEADERS;
-  const parsedCurrency = parsePlatformCurrency(currency);
 
   // Parse optional nested weeks payload for single-shot creation
   type ModuleInput = {
@@ -380,8 +386,7 @@ export const createProgram = catchAsync(async (req: Request, res: Response) => {
     data: {
       title,
       description,
-      price: parseFloat(String(price)),
-      ...(parsedCurrency !== undefined && { currency: parsedCurrency }),
+      priceMinor: parseToMinor(String(price), BASE_CURRENCY),
       category: parsedCategory,
       thumbnail,
       learningOutcomes,
@@ -444,14 +449,14 @@ export const createProgram = catchAsync(async (req: Request, res: Response) => {
   if (req.body.tags !== undefined) {
     await syncProgramTags(program.id, req.body.tags);
   }
-  const created = await findProgramWithRelations(program.id);
+  const created = await findProgramWithRelations(program.id, currencyOf(req));
 
   scheduleChatReindexProgram(program.id);
   res.status(201).json({ success: true, message: 'Program created.', data: created });
 });
 
 /** Re-reads a program with the relation shape every mutation response returns. */
-async function findProgramWithRelations(id: string) {
+async function findProgramWithRelations(id: string, currency: string) {
   const program = await prisma.program.findUnique({
     where: { id },
     include: {
@@ -463,7 +468,7 @@ async function findProgramWithRelations(id: string) {
     },
   });
   if (!program) throw new AppError('Program not found.', 404);
-  return withSerializedTags(program);
+  return withPrice(withSerializedTags(program), currency, { admin: true });
 }
 
 /**
@@ -471,7 +476,7 @@ async function findProgramWithRelations(id: string) {
  * Admin: updates program-level fields (Basic Info, Learning Objectives, Facilitator).
  * Weeks and Modules have their own dedicated endpoints.
  */
-export const updateProgram = catchAsync(async (req: Request, res: Response) => {
+export const updateProgram = catchAsync(async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
   const {
     title,
@@ -496,9 +501,8 @@ export const updateProgram = catchAsync(async (req: Request, res: Response) => {
   const data: Prisma.ProgramUpdateInput = {
     ...(title && { title }),
     ...(description && { description }),
-    ...(price !== undefined && { price: parseFloat(String(price)) }),
-    ...(currency !== undefined && currency !== '' && {
-      currency: parsePlatformCurrency(currency, true),
+    ...(price !== undefined && price !== '' && {
+      priceMinor: parseToMinor(String(price), BASE_CURRENCY),
     }),
     ...(isPublished !== undefined && {
       isPublished: isPublished === true || isPublished === 'true',
@@ -548,7 +552,7 @@ export const updateProgram = catchAsync(async (req: Request, res: Response) => {
   if (req.body.tags !== undefined) {
     await syncProgramTags(id, req.body.tags);
   }
-  const program = await findProgramWithRelations(id);
+  const program = await findProgramWithRelations(id, currencyOf(req));
 
   scheduleChatReindexProgram(id);
   res.json({ success: true, message: 'Program updated.', data: program });

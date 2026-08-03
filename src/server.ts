@@ -4,7 +4,8 @@ import prisma from './config/prisma';
 import { processExpiredConsultationPayments } from './services/consultationExpiry.service';
 import { processExpiredCampRegistrations } from './services/campRegistrationExpiry.service';
 import { processCampStatusTransitions } from './services/campStatus.service';
-import { syncPaystackPaymentSessionTimeoutIfEnabled } from './lib/paystackIntegration';
+import { runFxSync } from './services/fx/fxSync.job';
+import { FX_SYNC_INTERVAL_MS } from './config/money.config';
 
 const PORT = process.env.PORT || 5000;
 
@@ -17,8 +18,6 @@ const startServer = async () => {
     // Test database connection
     await prisma.$connect();
     console.log('✅ Database connected.');
-
-    await syncPaystackPaymentSessionTimeoutIfEnabled();
 
     setInterval(() => {
       processExpiredConsultationPayments().catch((err) =>
@@ -35,6 +34,11 @@ const startServer = async () => {
     setInterval(() => {
       processCampStatusTransitions().catch((err) => console.error('[camp-status]', err));
     }, CAMP_STATUS_INTERVAL_MS);
+
+    runFxSync().catch((err) => console.error('[fx-sync]', err));
+    setInterval(() => {
+      runFxSync().catch((err) => console.error('[fx-sync]', err));
+    }, FX_SYNC_INTERVAL_MS);
 
     app.listen(Number(PORT), '0.0.0.0', () => {
       console.log(`🚀 Server running on port ${PORT} in ${process.env.NODE_ENV} mode`);

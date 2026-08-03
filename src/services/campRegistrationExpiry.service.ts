@@ -9,14 +9,14 @@ import { whereExpiredHoldCandidates } from './campInventory.service';
  *
  * For each PENDING_PAYMENT registration past its `paymentExpiresAt`:
  *   - Atomically flips status → EXPIRED via `updateMany` guarded on
- *     `status === PENDING_PAYMENT`. If a concurrent Paystack webhook has
+ *     `status === PENDING_PAYMENT`. If a concurrent provider webhook has
  *     already promoted the row to CONFIRMED, our update returns count=0 and
  *     we skip the rest — the webhook owns that row's payment reconciliation.
  *   - Reconciles the linked Payment so a future retry can attach a fresh
  *     Payment without hitting `Payment.campRegistrationId @unique`:
  *       PENDING → status FAILED + null campRegistrationId
  *       FAILED  → null campRegistrationId
- *       SUCCESS → leave SUCCESS but tag `paystackResponse._refundRequired=true`
+ *       SUCCESS → leave SUCCESS but tag `providerResponse._refundRequired=true`
  *                 and emit a structured log. This handles the rare race where
  *                 charge.success commits in the same window we expire the
  *                 seat (the webhook would have skipped its refund-flag path
@@ -55,20 +55,20 @@ export async function processExpiredCampRegistrations(): Promise<number> {
       //    status changed since the scan (e.g. webhook just landed SUCCESS).
       const live = await tx.payment.findUnique({
         where: { id: reg.payment.id },
-        select: { id: true, status: true, paystackResponse: true },
+        select: { id: true, status: true, providerResponse: true },
       });
       if (!live) return true;
 
       if (live.status === 'SUCCESS') {
-        // Edge race: Paystack confirmed the charge while we were expiring the
+        // Edge race: the provider confirmed the charge while we were expiring the
         // seat. Webhook will have skipped its refund-flag branch (its own
         // updateMany now returns 0 against an EXPIRED row), so the worker
         // takes responsibility for marking this payment for manual refund.
-        const existing = (live.paystackResponse as object | null) ?? {};
+        const existing = (live.providerResponse as object | null) ?? {};
         await tx.payment.update({
           where: { id: live.id },
           data: {
-            paystackResponse: {
+            providerResponse: {
               ...existing,
               _refundRequired: true,
               _refundReason:

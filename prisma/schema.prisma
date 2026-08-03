@@ -18,8 +18,8 @@ enum PaymentStatus {
   FAILED
 }
 
-// Gateway used to process a Payment row. PAYSTACK is the historical default
-// (back-compat for rows created before Flutterwave was wired in).
+// PAYSTACK is retained for historical rows only; every new payment is
+// FLUTTERWAVE and the Paystack write paths have been removed.
 enum PaymentProvider {
   PAYSTACK
   FLUTTERWAVE
@@ -48,7 +48,7 @@ enum CampStatus {
 
 // Lifecycle for a single camp registration row.
 // - PENDING_PAYMENT: created by /api/camps/:id/register; holds a seat for `paymentExpiresAt` (default 60 min).
-// - CONFIRMED:       Paystack webhook reported success while still within the hold window.
+// - CONFIRMED:       provider webhook reported success while still within the hold window.
 // - EXPIRED:         hold elapsed without a successful charge; seat is released and the row is reusable on retry.
 // - CANCELLED:       explicit void by admin/support; seat released. Distinct from EXPIRED for reporting.
 enum CampRegistrationStatus {
@@ -72,14 +72,6 @@ enum ModuleType {
   QUIZ
   ASSIGNMENT
   OTHER
-}
-
-// Admin dashboard — Platform Settings page (singleton row id `default`)
-enum PlatformCurrency {
-  NGN
-  USD
-  EUR
-  GBP
 }
 
 enum ChatMessageRole {
@@ -108,12 +100,46 @@ enum TagType {
   FORMAT
 }
 
+// Presentment currencies the platform can sell in. GBP is the base and the
+// only currency prices are stored in. Rows are the capability list: seed only
+// what Flutterwave can both collect and settle.
+model SupportedCurrency {
+  code      String   @id
+  isBase    Boolean  @default(false)
+  isEnabled Boolean  @default(true)
+  marginBps Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("supported_currencies")
+}
+
+// Append-only. Payment rows reference a rate by id, so a row must never be
+// updated in place — superseding writes supersededAt and inserts a new row.
+model FxRate {
+  id            String    @id @default(cuid())
+  baseCurrency  String
+  quoteCurrency String
+  /// Quote units per 1 base unit.
+  rate          Decimal   @db.Decimal(18, 8)
+  source        String
+  probeAmount   Decimal?  @db.Decimal(18, 2)
+  fetchedAt     DateTime
+  supersededAt  DateTime?
+  createdAt     DateTime  @default(now())
+
+  payments Payment[]
+
+  @@index([quoteCurrency, supersededAt])
+  @@index([quoteCurrency, fetchedAt])
+  @@map("fx_rates")
+}
+
 model PlatformSettings {
   id                        String           @id @default("default")
   platformName              String           @default("Sit With PD")
   supportEmail              String           @default("support@sitwithpd.com")
   defaultTimezone           String           @default("Africa/Lagos")
-  currency                  PlatformCurrency @default(NGN)
   maintenanceMode           Boolean          @default(false)
   allowUserRegistration     Boolean          @default(true)
   requireEmailVerification  Boolean          @default(true)
@@ -168,8 +194,7 @@ model Program {
   id               String           @id @default(cuid())
   title            String
   description      String
-  price            Float
-  currency         PlatformCurrency @default(NGN)
+  priceMinor       BigInt
   category         ProgramCategory  @default(LEADERS)
   thumbnail        String?
   isPublished      Boolean         @default(false)
@@ -271,9 +296,6 @@ model Camp {
   title       String
   description String
   location    String
-  // Legacy column; unused for new camps. Pricing is defined only on CampTier — APIs omit this field from camp payloads.
-  price       Float?
-  currency    PlatformCurrency @default(USD)
   /// Single free-text phrase (e.g. "Wellness Retreat"). Required by the API on
   /// create, but nullable here so pre-existing camp rows migrate without a backfill.
   category    String?
@@ -300,7 +322,7 @@ model CampTier {
   campId       String
   label        String // "Individual", "Couple", "Family", etc.
   description  String?
-  price        Float
+  priceMinor   BigInt
   inclusions   String[] // ["Accommodation", "Meals", "Guided sessions", ...]
   seatsPerUnit Int      @default(1) // 1 for Individual, 2 for Couple, 4-5 for Family — consumed from camp.capacity
   maxUnits     Int? // Optional cap on how many of this tier can be sold (null = only bound by camp capacity)
@@ -401,12 +423,16 @@ model CampRegistration {
   createdAt        DateTime               @default(now())
   updatedAt        DateTime               @updatedAt
 
-  user    User      @relation(fields: [userId], references: [id])
-  camp    Camp      @relation(fields: [campId], references: [id], onDelete: Cascade)
-  tier    CampTier? @relation(fields: [tierId], references: [id], onDelete: SetNull)
-  payment Payment?
+  user         User              @relation(fields: [userId], references: [id])
+  camp         Camp              @relation(fields: [campId], references: [id], onDelete: Cascade)
+  tier         CampTier?         @relation(fields: [tierId], references: [id], onDelete: SetNull)
+  payment      Payment?
+  participants CampParticipant[]
 
-  @@unique([userId, campId])
+  // Deliberately NOT unique on (userId, campId): a user may buy several units.
+  // A new purchase is blocked while they hold an unexpired PENDING_PAYMENT row
+  // or a PENDING payment — see canStartNewRegistration().
+  @@index([userId, campId])
   // Inventory math (seatsTaken / per-tier units) filters by (campId, status).
   @@index([campId, status])
   // Expiry worker scans PENDING_PAYMENT rows whose paymentExpiresAt has elapsed.
@@ -414,12 +440,36 @@ model CampRegistration {
   @@map("camp_registrations")
 }
 
+// One row per attendee, including the lead applicant. The manifest is the
+// roster the organiser works from, so it is queryable rather than a JSON blob.
+// participants.length must equal CampRegistration.participantCount.
+model CampParticipant {
+  id                    String   @id @default(cuid())
+  registrationId        String
+  fullName              String
+  /// The account holder who booked; exactly one per registration.
+  isLead                Boolean  @default(false)
+  age                   Int?
+  relationship          String?
+  dietaryRequirements   String?
+  medicalConditions     String?
+  emergencyContactName  String?
+  emergencyContactPhone String?
+  order                 Int      @default(0)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  registration CampRegistration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+
+  @@index([registrationId, order])
+  @@map("camp_participants")
+}
+
 model ConsultationService {
   id             String           @id @default(cuid())
   title          String
   description    String
-  price          Float
-  currency       PlatformCurrency @default(NGN)
+  priceMinor     BigInt
   duration       Int
   calEventTypeId Int?
   calBookingUrl  String?
@@ -587,21 +637,30 @@ model Payment {
   id                 String          @id @default(cuid())
   userId             String
   type               PaymentType
-  amount             Float
-  currency           String          @default("NGN")
   status             PaymentStatus   @default(PENDING)
-  provider           PaymentProvider @default(PAYSTACK)
-  // Provider-specific unique reference. Paystack: their generated reference.
-  // Flutterwave: the `tx_ref` we generate and pass on init. Column name kept
-  // for migration compatibility — treat as a generic provider reference.
-  paystackRef        String          @unique
-  paystackResponse   Json?
+  provider           PaymentProvider @default(FLUTTERWAVE)
+  /// Flutterwave tx_ref, generated by us and echoed back on webhook.
+  providerRef        String          @unique
+  providerResponse   Json?
+
+  presentmentCurrency    String
+  presentmentAmountMinor BigInt
+  baseCurrency           String    @default("GBP")
+  baseAmountMinor        BigInt
+  fxRateId               String?
+  fxRate                 Decimal?  @db.Decimal(18, 8)
+  marginBps              Int       @default(0)
+  quotedAt               DateTime  @default(now())
+  /// Only knowable from the webhook — the card decides, not the checkout.
+  settlementCurrency     String?
+
   purchaseId         String?         @unique
   campRegistrationId String?         @unique
   consultationId     String?         @unique
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt
 
+  fxRateUsed       FxRate?           @relation(fields: [fxRateId], references: [id])
   user             User              @relation(fields: [userId], references: [id])
   purchase         Purchase?         @relation(fields: [purchaseId], references: [id])
   campRegistration CampRegistration? @relation(fields: [campRegistrationId], references: [id], onDelete: SetNull)
