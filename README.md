@@ -333,6 +333,14 @@ request-time conversion stable: ceiling rounding flips at step boundaries, so
 without it a 0.2% wobble would change advertised prices. Putting the threshold
 on ingest means prices are deterministic with no price cache anywhere.
 
+Because of that, **an old `fetchedAt` is the normal state of a healthy
+currency** — a stable rate is confirmed every cycle and rewritten by none of
+them. Freshness therefore counts from **`confirmedAt`**, which each successful
+poll stamps on the current row. It is the only column the sync may touch; the
+rate and `supersededAt` stay immutable because payments cite them. Measuring
+from `fetchedAt` instead took every non-base currency offline after
+`FX_STALE_THRESHOLD_HOURS` while the sync was reporting success.
+
 Sync runs every `FX_SYNC_INTERVAL_MINUTES` from `server.ts`, plus
 `POST /api/internal/cron/fx-sync` (Bearer `CRON_SECRET`). A failed lookup never
 supersedes a good rate; after `FX_ALERT_AFTER_FAILURES` consecutive total
@@ -340,7 +348,7 @@ failures the support inbox is emailed.
 
 ### Stale rates
 
-Past `FX_STALE_THRESHOLD_HOURS` (default 12):
+Past `FX_STALE_THRESHOLD_HOURS` (default 12) **since the last confirmation**:
 
 - **Checkout** in a non-base currency returns **503** telling the user to try GBP.
 - **GBP checkout always works** — it needs no rate. Degrade, don't outage.

@@ -125,6 +125,7 @@ model FxRate {
   source        String
   probeAmount   Decimal?  @db.Decimal(18, 2)
   fetchedAt     DateTime
+  confirmedAt   DateTime?
   supersededAt  DateTime?
   createdAt     DateTime  @default(now())
 

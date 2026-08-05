@@ -24,8 +24,29 @@ export async function getCurrentRate(quoteCurrency: string): Promise<FxRate | nu
   });
 }
 
-export function isStale(rate: Pick<FxRate, 'fetchedAt'>, now = new Date()): boolean {
-  return now.getTime() - rate.fetchedAt.getTime() > FX_STALE_THRESHOLD_MS;
+/**
+ * Freshness is "when did we last confirm this rate", not "when did it change".
+ * A rate inside the drift threshold is not rewritten, so measuring from
+ * fetchedAt would age out a rate the sync is successfully confirming.
+ */
+export function lastConfirmedAt(rate: Pick<FxRate, 'fetchedAt' | 'confirmedAt'>): Date {
+  const confirmed = rate.confirmedAt;
+  return confirmed && confirmed > rate.fetchedAt ? confirmed : rate.fetchedAt;
+}
+
+export function isStale(
+  rate: Pick<FxRate, 'fetchedAt' | 'confirmedAt'>,
+  now = new Date()
+): boolean {
+  return now.getTime() - lastConfirmedAt(rate).getTime() > FX_STALE_THRESHOLD_MS;
+}
+
+/**
+ * The only column the sync may touch on an existing row: the rate itself and
+ * supersededAt are immutable because payments cite them.
+ */
+export async function markRateConfirmed(id: string, at = new Date()): Promise<void> {
+  await prisma.fxRate.update({ where: { id }, data: { confirmedAt: at } });
 }
 
 export function driftBps(previous: Prisma.Decimal, next: number): number {
@@ -64,6 +85,7 @@ export async function writeRate(input: {
         probeAmount:
           input.probeAmount !== undefined ? new Prisma.Decimal(input.probeAmount) : null,
         fetchedAt,
+        confirmedAt: fetchedAt,
       },
     });
   });
@@ -88,6 +110,7 @@ export async function ingestRates(): Promise<RateIngestOutcome[]> {
       if (current) {
         const drift = driftBps(current.rate, fetched.rate);
         if (drift < FX_DRIFT_THRESHOLD_BPS) {
+          await markRateConfirmed(current.id);
           outcomes.push({
             quoteCurrency: currency.code,
             status: 'unchanged',
@@ -120,7 +143,14 @@ export async function ingestRates(): Promise<RateIngestOutcome[]> {
 }
 
 export async function listCurrentRates(): Promise<
-  Array<{ quoteCurrency: string; rate: string; source: string; fetchedAt: Date; stale: boolean }>
+  Array<{
+    quoteCurrency: string;
+    rate: string;
+    source: string;
+    fetchedAt: Date;
+    confirmedAt: Date;
+    stale: boolean;
+  }>
 > {
   const rows = await prisma.fxRate.findMany({
     where: { baseCurrency: BASE_CURRENCY, supersededAt: null },
@@ -131,6 +161,7 @@ export async function listCurrentRates(): Promise<
     rate: r.rate.toString(),
     source: r.source,
     fetchedAt: r.fetchedAt,
+    confirmedAt: lastConfirmedAt(r),
     stale: isStale(r),
   }));
 }

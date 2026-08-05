@@ -1,6 +1,6 @@
 import { Prisma } from '@prisma/client';
 import { describe, expect, it } from 'vitest';
-import { driftBps, isStale } from '../../src/services/fx/fxRate.service';
+import { driftBps, isStale, lastConfirmedAt } from '../../src/services/fx/fxRate.service';
 import { FX_STALE_THRESHOLD_MS, FX_DRIFT_THRESHOLD_BPS } from '../../src/config/money.config';
 
 const dec = (v: string) => new Prisma.Decimal(v);
@@ -44,7 +44,10 @@ describe('drift threshold gate', () => {
 });
 
 describe('isStale', () => {
-  const at = (msAgo: number) => ({ fetchedAt: new Date(Date.now() - msAgo) });
+  const at = (msAgo: number) => ({
+    fetchedAt: new Date(Date.now() - msAgo),
+    confirmedAt: null,
+  });
 
   it('is false inside the window', () => {
     expect(isStale(at(0))).toBe(false);
@@ -56,10 +59,26 @@ describe('isStale', () => {
   });
 
   it('respects an injected clock', () => {
-    const rate = { fetchedAt: new Date('2026-01-01T00:00:00Z') };
+    const rate = { fetchedAt: new Date('2026-01-01T00:00:00Z'), confirmedAt: null };
     const justInside = new Date(rate.fetchedAt.getTime() + FX_STALE_THRESHOLD_MS - 1);
     const justOutside = new Date(rate.fetchedAt.getTime() + FX_STALE_THRESHOLD_MS + 1);
     expect(isStale(rate, justInside)).toBe(false);
     expect(isStale(rate, justOutside)).toBe(true);
+  });
+
+  // The regression this column exists for: a rate whose drift stays under the
+  // threshold is never rewritten, so measuring from fetchedAt alone would take
+  // a currency offline while the sync was confirming it every cycle.
+  it('counts from the last confirmation, not the first sighting', () => {
+    const old = new Date(Date.now() - FX_STALE_THRESHOLD_MS * 10);
+    expect(isStale({ fetchedAt: old, confirmedAt: null })).toBe(true);
+    expect(isStale({ fetchedAt: old, confirmedAt: new Date() })).toBe(false);
+  });
+
+  it('ignores a confirmation older than the rate itself', () => {
+    const now = new Date();
+    const ancient = new Date(now.getTime() - FX_STALE_THRESHOLD_MS * 10);
+    expect(lastConfirmedAt({ fetchedAt: now, confirmedAt: ancient })).toEqual(now);
+    expect(isStale({ fetchedAt: now, confirmedAt: ancient })).toBe(false);
   });
 });

@@ -85,9 +85,10 @@ describe('localizePrice', () => {
   });
 
   it('rejects a stale rate at checkout but allows it for display', async () => {
+    const longAgo = new Date(Date.now() - 40 * 60 * 60 * 1000);
     await prisma.fxRate.updateMany({
       where: { quoteCurrency: TEST_QUOTE, supersededAt: null },
-      data: { fetchedAt: new Date(Date.now() - 40 * 60 * 60 * 1000) },
+      data: { fetchedAt: longAgo, confirmedAt: longAgo },
     });
 
     await expect(localizePrice(7900n, TEST_QUOTE)).rejects.toBeInstanceOf(StaleRateError);
@@ -97,7 +98,28 @@ describe('localizePrice', () => {
 
     await prisma.fxRate.updateMany({
       where: { quoteCurrency: TEST_QUOTE, supersededAt: null },
-      data: { fetchedAt: new Date() },
+      data: { fetchedAt: new Date(), confirmedAt: new Date() },
+    });
+  });
+
+  // A rate inside the drift threshold is never rewritten, so an old fetchedAt
+  // is the normal state of a healthy currency. Only a missing confirmation
+  // should take it offline.
+  it('accepts an old rate that the sync has recently confirmed', async () => {
+    await prisma.fxRate.updateMany({
+      where: { quoteCurrency: TEST_QUOTE, supersededAt: null },
+      data: {
+        fetchedAt: new Date(Date.now() - 40 * 60 * 60 * 1000),
+        confirmedAt: new Date(),
+      },
+    });
+
+    const quote = await localizePrice(7900n, TEST_QUOTE);
+    expect(quote.currency).toBe(TEST_QUOTE);
+
+    await prisma.fxRate.updateMany({
+      where: { quoteCurrency: TEST_QUOTE, supersededAt: null },
+      data: { fetchedAt: new Date(), confirmedAt: new Date() },
     });
   });
 
