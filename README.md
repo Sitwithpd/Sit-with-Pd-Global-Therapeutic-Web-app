@@ -130,15 +130,15 @@ camp.
 ### Consultations — `/api/consultations`
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
-| GET | `/services` | Public | List services (incl. `coverImageUrl`, `audience`, `whatsIncluded`, `format`, `tags`) |
+| GET | `/services` | Public | List active services (incl. `category`, `coverImageUrl`, `audience`, `whatsIncluded`, `format`, `tags`). Optional `?category=` — case-insensitive exact match |
 | GET | `/services/:id` | Public | Service detail (same shape) |
-| GET | `/admin/services` | Admin | Every service **including inactive ones**, priced in the base currency. The public list filters to `isActive`, which would hide a deactivated service from the screen that manages it |
+| GET | `/admin/services` | Admin | Every service **including inactive ones**, priced in the base currency. The public list filters to `isActive`, which would hide a deactivated service from the screen that manages it. Optional `?category=` |
 | POST | `/book` | User | Book consultation |
 | GET | `/my` | User | My bookings |
 | GET | `/` | Admin | All bookings. A booking has no price of its own: `service` carries the base-currency list price, `payment` (nullable) carries what was actually charged |
 | PATCH | `/:id` | Admin | Update booking |
-| POST | `/services` | Admin | Create service — **`multipart/form-data`**, optional `coverImage` file |
-| PATCH | `/services/:id` | Admin | Update service — same; JSON callers may pass `coverImageUrl` as a string |
+| POST | `/services` | Admin | Create service — **`multipart/form-data`**, optional `coverImage` file. **`category` is required** |
+| PATCH | `/services/:id` | Admin | Update service — same; JSON callers may pass `coverImageUrl` as a string. `category` may be omitted to keep it, but must be non-empty when present |
 
 ### Tags — `/api/tags`
 | Method | Endpoint | Auth | Description |

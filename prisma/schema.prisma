@@ -470,6 +470,7 @@ model ConsultationService {
   id             String           @id @default(cuid())
   title          String
   description    String
+  category       String?
   priceMinor     BigInt
   duration       Int
   calEventTypeId Int?

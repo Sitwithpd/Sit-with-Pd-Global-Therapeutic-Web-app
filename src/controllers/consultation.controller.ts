@@ -116,6 +116,31 @@ async function assertCalEventTypeIdAvailable(
   if (existing) throw new AppError(CAL_EVENT_TYPE_TAKEN, 409);
 }
 
+export const SERVICE_CATEGORY_MAX = 80;
+
+/**
+ * Single free-text phrase, e.g. "Career Coaching". Mirrors Camp.category:
+ * required by the API on create even though the column is nullable, so
+ * services that predate the field are left untouched until an admin edits one.
+ */
+function parseServiceCategory(raw: unknown, required: boolean): string | undefined {
+  if (raw === undefined || raw === null || String(raw).trim() === '') {
+    if (required) throw new AppError('category is required.', 400);
+    return undefined;
+  }
+  const s = String(raw).trim();
+  if (s.length > SERVICE_CATEGORY_MAX) {
+    throw new AppError(`category must be at most ${SERVICE_CATEGORY_MAX} characters.`, 400);
+  }
+  return s;
+}
+
+/** Case-insensitive exact match, so a filter chip matches however it was typed. */
+function categoryFilter(raw: unknown): Prisma.ConsultationServiceWhereInput {
+  if (typeof raw !== 'string' || raw.trim() === '') return {};
+  return { category: { equals: raw.trim(), mode: 'insensitive' } };
+}
+
 // ─────────────────────────────────────────────
 // PUBLIC ROUTES
 // ─────────────────────────────────────────────
@@ -123,7 +148,7 @@ async function assertCalEventTypeIdAvailable(
 // GET /api/consultations/services — List all active consultation services
 export const getServices = catchAsync(async (req: AuthRequest, res: Response) => {
   const services = await prisma.consultationService.findMany({
-    where: { isActive: true },
+    where: { isActive: true, ...categoryFilter(req.query.category) },
     orderBy: { createdAt: 'asc' },
     include: serviceRelationInclude,
   });
@@ -197,8 +222,9 @@ export const getMyConsultations = catchAsync(async (req: AuthRequest, res: Respo
 // ─────────────────────────────────────────────
 
 // GET /api/consultations/admin/services — every service, active or not
-export const getAllServicesAdmin = catchAsync(async (_req: AuthRequest, res: Response) => {
+export const getAllServicesAdmin = catchAsync(async (req: AuthRequest, res: Response) => {
   const services = await prisma.consultationService.findMany({
+    where: categoryFilter(req.query.category),
     orderBy: { createdAt: 'asc' },
     include: serviceRelationInclude,
   });
@@ -299,6 +325,7 @@ export const updateConsultation = catchAsync(async (req: Request, res: Response)
 // POST /api/admin/consultations/services — Create a new service
 export const createService = catchAsync(async (req: AuthRequest, res: Response) => {
   const { title, description, price, duration, calEventTypeId } = req.body;
+  const category = parseServiceCategory(req.body.category, true)!;
 
   let parsedCal: number | undefined;
   if (calEventTypeId != null && calEventTypeId !== '') {
@@ -314,6 +341,7 @@ export const createService = catchAsync(async (req: AuthRequest, res: Response) 
   const createData: Prisma.ConsultationServiceUncheckedCreateInput = {
     title,
     description,
+    category,
     priceMinor: parseToMinor(String(price), BASE_CURRENCY),
     duration: parseInt(duration, 10),
     audience: parseBulletList(req.body.audience, 'audience'),
@@ -375,6 +403,9 @@ export const updateService = catchAsync(async (req: AuthRequest, res: Response) 
 
   const coverImageUrl = resolveCoverImageUrl(req);
   const formatTagId = await resolveFormatTagId(req.body.format);
+  // Omit to keep the current value; when present it must be a non-empty phrase.
+  const nextCategory =
+    req.body.category !== undefined ? parseServiceCategory(req.body.category, true) : undefined;
 
   try {
     await prisma.consultationService.update({
@@ -382,6 +413,7 @@ export const updateService = catchAsync(async (req: AuthRequest, res: Response) 
       data: {
         ...(title && { title }),
         ...(description && { description }),
+        ...(nextCategory !== undefined && { category: nextCategory }),
         ...(price != null && price !== '' && {
           priceMinor: parseToMinor(String(price), BASE_CURRENCY),
         }),

@@ -21,6 +21,7 @@ export async function extractConsultationChunks(serviceId: string): Promise<Know
 
   const text = [
     `Consultation service: ${service.title}`,
+    service.category ? `Category: ${service.category}` : '',
     `Duration: ${service.duration} minutes`,
     `Price: ${formatMoney(service.priceMinor, BASE_CURRENCY)}`,
     service.formatTag ? `Format: ${service.formatTag.name}` : '',
