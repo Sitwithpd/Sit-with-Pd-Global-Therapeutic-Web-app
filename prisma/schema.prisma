@@ -376,6 +376,7 @@ model TeamMember {
   id          String   @id @default(cuid())
   name        String
   role        String
+  bio         String?
   photoUrl    String?
   isPublished Boolean  @default(true)
   order       Int      @default(0)

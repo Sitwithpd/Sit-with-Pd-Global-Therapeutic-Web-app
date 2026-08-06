@@ -209,6 +209,37 @@ Two shapes, deliberately distinct:
 > knowledge index** (see `community.extractor.ts`), because retrieved RAG chunks
 > are pasted into the model prompt and would be handed to any visitor who asked.
 
+### Team — `/api/team`
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/` | Public | Published members, ordered by `order` then `createdAt` |
+| GET | `/:id` | Public | Single **published** member |
+| GET | `/admin/all` | Admin | Paginated, including unpublished |
+| POST | `/` | Admin | Create — **`multipart/form-data`**, optional `photo` file |
+| PATCH | `/:id` | Admin | Update — omit a field to keep it |
+| DELETE | `/:id` | Admin | Delete |
+
+#### `bio` — long-form copy
+
+`bio` is optional prose where **line structure is content**: blank lines
+separate paragraphs and must survive the round trip. It is stored normalised so
+what an admin pastes cannot vary by editor:
+
+| Input | Stored |
+|---|---|
+| `\r\n` / `\r` (Word, Windows) | `\n` |
+| trailing spaces on a line | removed |
+| 3+ consecutive newlines | collapsed to one blank line |
+| leading / trailing whitespace | trimmed |
+| `""` or whitespace only | `null` |
+
+The 5,000-character cap is checked **after** normalising, so invisible `\r`
+characters cannot push an otherwise-valid bio over the limit. Omit the field on
+`PATCH` to keep the current value; send `""` to clear it.
+
+Consumers must render it with preserved whitespace (`white-space: pre-wrap`, or
+split on `\n\n` into paragraphs) — the newlines are the formatting.
+
 ### Payments — `/api/payments`
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|

@@ -8,6 +8,7 @@ import { AuthRequest } from '../types';
 
 export const TEAM_NAME_MAX = 200;
 export const TEAM_ROLE_MAX = 120;
+export const TEAM_BIO_MAX = 5000;
 
 function parseBoolean(input: unknown): boolean {
   if (typeof input === 'boolean') return input;
@@ -45,6 +46,39 @@ function trimRole(role: unknown, required: boolean): string | null {
     throw new AppError(`role must be at most ${TEAM_ROLE_MAX} characters.`, 400);
   }
   return s;
+}
+
+
+/**
+ * Long-form profile copy, so line structure is content rather than noise.
+ *
+ * Blank lines separate paragraphs and must survive, which rules out a plain
+ * `.trim()` on the whole string being enough. What is normalised:
+ *  - CRLF/CR to LF, so a paste from Word does not store \r\n that then throws
+ *    the length check and any downstream rendering out
+ *  - trailing spaces per line, which paste leaves behind invisibly
+ *  - runs of 3+ newlines down to 2 (one blank line), so an accidental lean on
+ *    Enter cannot open a chasm in the layout
+ *  - leading/trailing whitespace of the whole field
+ *
+ * Returns null for an absent or emptied value: bio is optional, and sending ""
+ * is how the admin form clears one.
+ */
+function normalizeBio(raw: unknown): string | null {
+  if (raw === undefined || raw === null) return null;
+  if (Buffer.isBuffer(raw)) return normalizeBio(raw.toString('utf8'));
+
+  const normalized = String(raw)
+    .replace(/\r\n?/g, '\n')
+    .replace(/[ \t]+$/gm, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+
+  if (!normalized) return null;
+  if (normalized.length > TEAM_BIO_MAX) {
+    throw new AppError(`bio must be at most ${TEAM_BIO_MAX} characters.`, 400);
+  }
+  return normalized;
 }
 
 function uploadedPhotoUrl(req: AuthRequest): string | undefined {
@@ -93,7 +127,7 @@ export const getTeamMemberById = catchAsync(async (req: Request, res: Response) 
 
 // POST /api/team — admin
 export const createTeamMember = catchAsync(async (req: AuthRequest, res: Response) => {
-  const { name, role, photoUrl, isPublished, order } = req.body;
+  const { name, role, bio, photoUrl, isPublished, order } = req.body;
   const safeName = trimName(name);
   const safeRole = trimRole(role, true);
   const uploaded = uploadedPhotoUrl(req);
@@ -102,6 +136,7 @@ export const createTeamMember = catchAsync(async (req: AuthRequest, res: Respons
     data: {
       name: safeName,
       role: safeRole!,
+      bio: normalizeBio(bio),
       photoUrl: uploaded || (typeof photoUrl === 'string' && photoUrl.trim() ? photoUrl.trim() : null),
       isPublished: isPublished === undefined ? true : parseBoolean(isPublished),
       order: parseOrder(order),
@@ -113,7 +148,7 @@ export const createTeamMember = catchAsync(async (req: AuthRequest, res: Respons
 
 // PATCH /api/team/:id — admin
 export const updateTeamMember = catchAsync(async (req: AuthRequest, res: Response) => {
-  const { name, role, photoUrl, isPublished, order } = req.body;
+  const { name, role, bio, photoUrl, isPublished, order } = req.body;
 
   const existing = await prisma.teamMember.findUnique({ where: { id: req.params.id } });
   if (!existing) throw new AppError('Team member not found.', 404);
@@ -126,6 +161,8 @@ export const updateTeamMember = catchAsync(async (req: AuthRequest, res: Respons
     const safeRole = trimRole(role, true);
     if (safeRole) data.role = safeRole;
   }
+  // Omit to keep the current bio; send "" to clear it.
+  if (bio !== undefined) data.bio = normalizeBio(bio);
   if (uploaded) {
     data.photoUrl = uploaded;
   } else if (photoUrl !== undefined) {
