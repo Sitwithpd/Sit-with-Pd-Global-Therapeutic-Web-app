@@ -29,6 +29,7 @@ enum PaymentType {
   PROGRAM
   CAMP
   CONSULTATION
+  MEMBERSHIP
 }
 
 enum ConsultationStatus {
@@ -136,18 +137,126 @@ model FxRate {
   @@map("fx_rates")
 }
 
+enum BillingInterval {
+  MONTHLY
+  ANNUAL
+}
+
+// PENDING_PAYMENT: created at checkout, not yet paid for.
+// ACTIVE:          paid and inside the current period.
+// PAST_DUE:        a renewal charge failed; access continues until periodEnd.
+// CANCELLED:       auto-renew switched off by the member; still ACTIVE-equivalent
+//                  until periodEnd, then EXPIRED. Access is never revoked early.
+// EXPIRED:         the paid period elapsed without a successful renewal.
+enum SubscriptionStatus {
+  PENDING_PAYMENT
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+  EXPIRED
+}
+
+model MembershipPlan {
+  id                String   @id @default(cuid())
+  name              String
+  tagline           String?
+  /// GBP minor units, like every other price on the platform.
+  monthlyPriceMinor BigInt
+  annualPriceMinor  BigInt
+  /// Display copy shown on the pricing card. Not structured entitlements —
+  /// nothing in the app gates on these strings.
+  benefits          String[]
+  isActive          Boolean  @default(true)
+  /// Display order on the public pricing grid.
+  order             Int      @default(0)
+  /// Renders the "most popular" treatment on the public page.
+  isFeatured        Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  providerPlans        MembershipProviderPlan[]
+  subscriptions        Subscription[]
+  pendingSubscriptions Subscription[]           @relation("PendingPlan")
+
+  @@index([isActive, order])
+  @@map("membership_plans")
+}
+
+// A Flutterwave payment plan fixes both amount and currency, so one of ours
+// maps to many of theirs. Keyed by amount as well as currency: when an admin
+// reprices, a new row (and a new Flutterwave plan) is created and existing
+// subscribers keep billing at the price they agreed to.
+model MembershipProviderPlan {
+  id             String          @id @default(cuid())
+  planId         String
+  interval       BillingInterval
+  currency       String
+  amountMinor    BigInt
+  /// Flutterwave payment-plan id.
+  providerPlanId String
+  createdAt      DateTime        @default(now())
+
+  plan          MembershipPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  subscriptions Subscription[]
+
+  @@unique([planId, interval, currency, amountMinor])
+  @@map("membership_provider_plans")
+}
+
+model Subscription {
+  id       String             @id @default(cuid())
+  userId   String
+  planId   String
+  interval BillingInterval
+  status   SubscriptionStatus @default(PENDING_PAYMENT)
+
+  /// What the member is billed, locked at signup. Mirrors the Payment ledger:
+  /// presentment is what they actually pay, base is the GBP equivalent.
+  presentmentCurrency    String
+  presentmentAmountMinor BigInt
+  baseCurrency           String @default("GBP")
+  baseAmountMinor        BigInt
+
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  /// Set by cancel; the row stays usable until currentPeriodEnd.
+  cancelAtPeriodEnd  Boolean   @default(false)
+  cancelledAt        DateTime?
+
+  /// A downgrade is scheduled rather than applied, so nobody loses paid time.
+  pendingPlanId   String?
+  pendingInterval BillingInterval?
+
+  providerPlanRowId      String?
+  /// Flutterwave subscription id, learned from the first successful charge.
+  providerSubscriptionId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user         User                    @relation(fields: [userId], references: [id])
+  plan         MembershipPlan          @relation(fields: [planId], references: [id])
+  pendingPlan  MembershipPlan?         @relation("PendingPlan", fields: [pendingPlanId], references: [id])
+  providerPlan MembershipProviderPlan? @relation(fields: [providerPlanRowId], references: [id])
+  payments     Payment[]
+
+  @@index([userId, status])
+  @@index([status, currentPeriodEnd])
+  @@map("subscriptions")
+}
+
 model PlatformSettings {
-  id                        String           @id @default("default")
-  platformName              String           @default("Sit With PD")
-  supportEmail              String           @default("support@sitwithpd.com")
-  defaultTimezone           String           @default("Africa/Lagos")
-  maintenanceMode           Boolean          @default(false)
-  allowUserRegistration     Boolean          @default(true)
-  requireEmailVerification  Boolean          @default(true)
-  autoEnrollment            Boolean          @default(false)
-  emailNotificationsEnabled Boolean          @default(true)
-  createdAt                 DateTime         @default(now())
-  updatedAt                 DateTime         @updatedAt
+  id                        String   @id @default("default")
+  platformName              String   @default("Sit With PD")
+  supportEmail              String   @default("support@sitwithpd.com")
+  defaultTimezone           String   @default("Africa/Lagos")
+  maintenanceMode           Boolean  @default(false)
+  allowUserRegistration     Boolean  @default(true)
+  requireEmailVerification  Boolean  @default(true)
+  autoEnrollment            Boolean  @default(false)
+  emailNotificationsEnabled Boolean  @default(true)
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
 
   @@map("platform_settings")
 }
@@ -173,13 +282,14 @@ model User {
   createdAt               DateTime  @default(now())
   updatedAt               DateTime  @updatedAt
 
-  purchases         Purchase[]
-  campRegistrations CampRegistration[]
-  consultations     Consultation[]
-  payments          Payment[]
+  purchases                Purchase[]
+  campRegistrations        CampRegistration[]
+  consultations            Consultation[]
+  payments                 Payment[]
   programModuleCompletions ProgramModuleCompletion[]
-  blogPosts         BlogPost[]
-  chatSessions      ChatSession[]
+  blogPosts                BlogPost[]
+  chatSessions             ChatSession[]
+  subscriptions            Subscription[]
 
   @@map("users")
 }
@@ -192,11 +302,11 @@ enum ProgramCategory {
 }
 
 model Program {
-  id               String           @id @default(cuid())
+  id               String          @id @default(cuid())
   title            String
   description      String
   priceMinor       BigInt
-  category         ProgramCategory  @default(LEADERS)
+  category         ProgramCategory @default(LEADERS)
   thumbnail        String?
   isPublished      Boolean         @default(false)
   durationWeeks    Int?
@@ -254,7 +364,7 @@ model ProgramModule {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  week ProgramWeek @relation(fields: [weekId], references: [id], onDelete: Cascade)
+  week        ProgramWeek               @relation(fields: [weekId], references: [id], onDelete: Cascade)
   completions ProgramModuleCompletion[]
 
   @@map("program_modules")
@@ -278,10 +388,10 @@ model ProgramModuleCompletion {
 
 // Enrolment row; programCompletedAt mirrors "all modules completed" for dashboard Completed section.
 model Purchase {
-  id                String    @id @default(cuid())
-  userId            String
-  programId         String
-  createdAt         DateTime  @default(now())
+  id                 String    @id @default(cuid())
+  userId             String
+  programId          String
+  createdAt          DateTime  @default(now())
   programCompletedAt DateTime?
 
   user    User     @relation(fields: [userId], references: [id])
@@ -387,21 +497,21 @@ model TeamMember {
 }
 
 model BlogPost {
-  id                 String       @id @default(cuid())
-  slug               String       @unique
-  title              String
-  excerpt            String
-  body               String
-  readTimeMinutes    Int          @default(5)
-  category           BlogCategory
-  coverImageUrl      String?
-  isPublished        Boolean      @default(false)
-  publishedAt        DateTime?
-  authorId           String?
+  id                String       @id @default(cuid())
+  slug              String       @unique
+  title             String
+  excerpt           String
+  body              String
+  readTimeMinutes   Int          @default(5)
+  category          BlogCategory
+  coverImageUrl     String?
+  isPublished       Boolean      @default(false)
+  publishedAt       DateTime?
+  authorId          String?
   /// Public byline when different from linked User (guest, posting on behalf of someone).
-  authorDisplayName  String?
-  createdAt          DateTime     @default(now())
-  updatedAt          DateTime     @updatedAt
+  authorDisplayName String?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
 
   author User? @relation(fields: [authorId], references: [id], onDelete: SetNull)
 
@@ -468,7 +578,7 @@ model CampParticipant {
 }
 
 model ConsultationService {
-  id             String           @id @default(cuid())
+  id             String   @id @default(cuid())
   title          String
   description    String
   category       String?
@@ -513,7 +623,7 @@ model Tag {
   programs             ProgramTag[]
   consultationServices ConsultationServiceTag[]
   communities          CommunityTag[]
-  formatForServices    ConsultationService[] @relation("ConsultationServiceFormat")
+  formatForServices    ConsultationService[]    @relation("ConsultationServiceFormat")
 
   // Scoped by type so "Wellness" can exist as both a TOPIC and a FORMAT.
   @@unique([type, slug])
@@ -637,37 +747,39 @@ model Consultation {
 }
 
 model Payment {
-  id                 String          @id @default(cuid())
-  userId             String
-  type               PaymentType
-  status             PaymentStatus   @default(PENDING)
-  provider           PaymentProvider @default(FLUTTERWAVE)
+  id               String          @id @default(cuid())
+  userId           String
+  type             PaymentType
+  status           PaymentStatus   @default(PENDING)
+  provider         PaymentProvider @default(FLUTTERWAVE)
   /// Flutterwave tx_ref, generated by us and echoed back on webhook.
-  providerRef        String          @unique
-  providerResponse   Json?
+  providerRef      String          @unique
+  providerResponse Json?
 
   presentmentCurrency    String
   presentmentAmountMinor BigInt
-  baseCurrency           String    @default("GBP")
+  baseCurrency           String   @default("GBP")
   baseAmountMinor        BigInt
   fxRateId               String?
-  fxRate                 Decimal?  @db.Decimal(18, 8)
-  marginBps              Int       @default(0)
-  quotedAt               DateTime  @default(now())
+  fxRate                 Decimal? @db.Decimal(18, 8)
+  marginBps              Int      @default(0)
+  quotedAt               DateTime @default(now())
   /// Only knowable from the webhook — the card decides, not the checkout.
   settlementCurrency     String?
 
-  purchaseId         String?         @unique
-  campRegistrationId String?         @unique
-  consultationId     String?         @unique
-  createdAt          DateTime        @default(now())
-  updatedAt          DateTime        @updatedAt
+  purchaseId         String?  @unique
+  campRegistrationId String?  @unique
+  consultationId     String?  @unique
+  subscriptionId     String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   fxRateUsed       FxRate?           @relation(fields: [fxRateId], references: [id])
   user             User              @relation(fields: [userId], references: [id])
   purchase         Purchase?         @relation(fields: [purchaseId], references: [id])
   campRegistration CampRegistration? @relation(fields: [campRegistrationId], references: [id], onDelete: SetNull)
   consultation     Consultation?     @relation(fields: [consultationId], references: [id])
+  subscription     Subscription?     @relation(fields: [subscriptionId], references: [id])
 
   @@map("payments")
 }
@@ -707,16 +819,16 @@ model ContactSubmission {
 // ── AI Chat (OpenAI + pgvector RAG) ───────────────────────────────────────────
 
 model ChatSession {
-  id              String    @id @default(cuid())
-  userId          String?
+  id             String    @id @default(cuid())
+  userId         String?
   /// SHA-256 hex of the guest cookie token (never store the raw token).
-  guestTokenHash  String?
-  expiresAt       DateTime?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  guestTokenHash String?
+  expiresAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
-  user     User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
-  messages ChatMessage[]
+  user      User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  messages  ChatMessage[]
   usageLogs ChatUsageLog[]
 
   @@index([userId])
@@ -740,18 +852,18 @@ model ChatMessage {
 }
 
 model ChatKnowledgeChunk {
-  id          String                  @id @default(cuid())
+  id          String                       @id @default(cuid())
   sourceType  ChatKnowledgeSourceType
   sourceId    String
-  chunkIndex  Int                     @default(0)
+  chunkIndex  Int                          @default(0)
   title       String
   path        String
   text        String
   contentHash String
   /// pgvector column — read/write via raw SQL ($executeRaw); Prisma cannot query vectors natively.
   embedding   Unsupported("vector(1536)")?
-  createdAt   DateTime                @default(now())
-  updatedAt   DateTime                @updatedAt
+  createdAt   DateTime                     @default(now())
+  updatedAt   DateTime                     @updatedAt
 
   @@unique([sourceType, sourceId, chunkIndex])
   @@index([sourceType, sourceId])

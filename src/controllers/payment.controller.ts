@@ -4,6 +4,7 @@ import crypto from 'crypto';
 import prisma from '../config/prisma';
 import { buildMeta, parseAdminPagination } from '../lib/pagination';
 import { catchAsync, AppError } from '../middleware/error.middleware';
+import { fulfilMembershipPayment } from '../services/membership/membershipFulfilment.service';
 import { currencyOf } from '../middleware/currency.middleware';
 import { BASE_CURRENCY, minorToDecimalString } from '../lib/money';
 import { serializePaymentAmount } from '../lib/priceSerialization';
@@ -200,7 +201,7 @@ export const initializePayment = catchAsync(async (req: AuthRequest, res: Respon
 interface FulfilmentInput {
   reference: string;
   userId: string;
-  type: 'PROGRAM' | 'CAMP' | 'CONSULTATION';
+  type: 'PROGRAM' | 'CAMP' | 'CONSULTATION' | 'MEMBERSHIP';
   itemId: string;
   rawProviderResponse: object;
   paidAt: Date;
@@ -291,6 +292,12 @@ async function fulfilSuccessfulPayment(input: FulfilmentInput): Promise<void> {
     return;
   }
 
+
+  if (type === 'MEMBERSHIP') {
+    await fulfilMembershipPayment({ payment, userId, subscriptionId: itemId, paidAt, user });
+    return;
+  }
+
   if (type === 'CONSULTATION') {
     const consultation = await prisma.consultation.findUnique({
       where: { id: itemId },
@@ -375,7 +382,7 @@ export const flutterwaveWebhook = async (req: Request, res: Response) => {
 
   const eventMeta = event.data.meta;
   let userId = payment.userId;
-  let type = payment.type as 'PROGRAM' | 'CAMP' | 'CONSULTATION';
+  let type = payment.type as 'PROGRAM' | 'CAMP' | 'CONSULTATION' | 'MEMBERSHIP';
   let itemId: string | null = null;
 
   if (eventMeta?.userId && eventMeta?.type && eventMeta?.itemId) {
@@ -386,6 +393,10 @@ export const flutterwaveWebhook = async (req: Request, res: Response) => {
     itemId = payment.campRegistrationId;
   } else if (payment.type === 'CONSULTATION') {
     itemId = payment.consultationId;
+  } else if (payment.type === 'MEMBERSHIP') {
+    // Renewals are raised by Flutterwave against the same plan, so the
+    // subscription link on our own row is the only reliable anchor.
+    itemId = payment.subscriptionId;
   } else if (payment.type === 'PROGRAM') {
     const initMeta =
       (payment.providerResponse as { _initMeta?: { itemId?: string } } | null)?._initMeta;

@@ -13,7 +13,7 @@ function getSecretKey(): string {
 }
 
 /** Generic Flutterwave API call wrapper. */
-async function flutterwaveRequest<T = unknown>(
+export async function flutterwaveRequest<T = unknown>(
   endpoint: string,
   method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET',
   body?: object
@@ -36,8 +36,14 @@ export interface FlutterwaveInitInput {
   email: string;
   fullName?: string;
   redirectUrl: string;
-  meta: { userId: string; type: 'PROGRAM' | 'CAMP' | 'CONSULTATION'; itemId: string };
+  meta: { userId: string; type: 'PROGRAM' | 'CAMP' | 'CONSULTATION' | 'MEMBERSHIP'; itemId: string };
   paymentSessionTimeoutSeconds?: number;
+  /**
+   * Flutterwave payment-plan id. When present the charge enrols the customer on
+   * that plan and Flutterwave owns every subsequent debit, retry and dunning
+   * attempt — we only observe the resulting charge.completed events.
+   */
+  paymentPlanId?: string;
 }
 
 export interface FlutterwaveInitResponse {
@@ -65,6 +71,8 @@ export async function initializeFlutterwavePayment(
     },
     meta: input.meta,
   };
+
+  if (input.paymentPlanId) payload.payment_plan = input.paymentPlanId;
 
   if (input.paymentSessionTimeoutSeconds && input.paymentSessionTimeoutSeconds > 0) {
     payload.payment_options = 'card,banktransfer,ussd,account';
@@ -118,4 +126,41 @@ export function isValidFlutterwaveWebhookSignature(
   } catch {
     return false;
   }
+}
+
+// ── Payment plans (recurring) ────────────────────────────────────────────────
+
+export interface FlutterwavePaymentPlanResponse {
+  status: 'success' | 'error';
+  message?: string;
+  data?: { id: number; name: string; amount: number; interval: string; status: string };
+}
+
+/**
+ * Creates a recurring payment plan. Flutterwave fixes the amount and currency
+ * on the plan itself, which is why one membership plan needs one of these per
+ * (interval x currency x price) — see MembershipProviderPlan.
+ *
+ * `duration` is omitted deliberately: absent means bill indefinitely until the
+ * subscription is cancelled, which is what a membership is.
+ */
+export async function createFlutterwavePaymentPlan(input: {
+  name: string;
+  amount: number;
+  currency: string;
+  interval: 'monthly' | 'yearly';
+}): Promise<FlutterwavePaymentPlanResponse> {
+  return flutterwaveRequest<FlutterwavePaymentPlanResponse>('/payment-plans', 'POST', {
+    name: input.name,
+    amount: input.amount,
+    currency: input.currency,
+    interval: input.interval,
+  });
+}
+
+/** Stops future debits. Flutterwave keeps the plan row; it just goes inactive. */
+export async function cancelFlutterwaveSubscription(
+  subscriptionId: string
+): Promise<{ status: 'success' | 'error'; message?: string }> {
+  return flutterwaveRequest(`/subscriptions/${subscriptionId}/cancel`, 'PUT');
 }

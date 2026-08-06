@@ -5,6 +5,7 @@ import { processExpiredConsultationPayments } from './services/consultationExpir
 import { processExpiredCampRegistrations } from './services/campRegistrationExpiry.service';
 import { processCampStatusTransitions } from './services/campStatus.service';
 import { runFxSync } from './services/fx/fxSync.job';
+import { processExpiredSubscriptions } from './services/membership/subscriptionExpiry.service';
 import { FX_SYNC_INTERVAL_MS } from './config/money.config';
 
 const PORT = process.env.PORT || 5000;
@@ -33,6 +34,10 @@ const startServer = async () => {
 
     setInterval(() => {
       processCampStatusTransitions().catch((err) => console.error('[camp-status]', err));
+    }, CAMP_STATUS_INTERVAL_MS);
+
+    setInterval(() => {
+      processExpiredSubscriptions().catch((err) => console.error('[subscription-expiry]', err));
     }, CAMP_STATUS_INTERVAL_MS);
 
     runFxSync().catch((err) => console.error('[fx-sync]', err));

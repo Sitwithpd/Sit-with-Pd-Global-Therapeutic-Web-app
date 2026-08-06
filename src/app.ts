@@ -18,6 +18,8 @@ import contactRoutes from './routes/contact.routes';
 import teamRoutes from './routes/team.routes';
 import tagRoutes from './routes/tag.routes';
 import communityRoutes from './routes/community.routes';
+import membershipRoutes from './routes/membership.routes';
+import { processExpiredSubscriptions } from './services/membership/subscriptionExpiry.service';
 import chatRoutes from './routes/chat.routes';
 import { dashboardRouter, adminRouter } from './routes/admin.routes';
 import { errorHandler } from './middleware/error.middleware';
@@ -160,6 +162,20 @@ app.post('/api/internal/cron/camp-status', async (req, res, next) => {
   }
 });
 
+app.post('/api/internal/cron/subscription-expiry', async (req, res, next) => {
+  const secret = process.env.CRON_SECRET;
+  const auth = req.headers.authorization;
+  if (!secret || auth !== `Bearer ${secret}`) {
+    return res.status(401).json({ success: false, message: 'Unauthorized.' });
+  }
+  try {
+    const result = await processExpiredSubscriptions();
+    return res.json({ success: true, ...result });
+  } catch (e) {
+    next(e);
+  }
+});
+
 app.post('/api/internal/cron/fx-sync', async (req, res, next) => {
   const secret = process.env.CRON_SECRET;
   const auth = req.headers.authorization;
@@ -206,6 +222,7 @@ app.use('/api/team', teamRoutes);
 app.use('/api/tags', tagRoutes);
 // Join has its own tighter limiter inside the router (it sends mail).
 app.use('/api/communities', communityRoutes);
+app.use('/api/memberships', membershipRoutes);
 app.use('/api/chat', chatLimiter, chatRoutes);
 app.use('/api/consultations', consultationRoutes);
 app.use('/api/payments', paymentRoutes);

@@ -3,14 +3,21 @@ import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
+const ADMIN_EMAIL = 'samoluabereola@gmail.com';
+const ADMIN_PASSWORD = 'Admin@1234';
+
+// Prices are stored as integer minor units in the base currency (GBP pence).
+// See src/lib/money.ts — never a float, and never a per-entity currency.
+const GBP = (pounds: number) => BigInt(Math.round(pounds * 100));
+
 async function main() {
   console.log('🌱 Seeding database...');
 
   // Create Admin user
-  const hashedPassword = await bcrypt.hash('Admin@1234', 12);
+  const hashedPassword = await bcrypt.hash(ADMIN_PASSWORD, 12);
 
   const admin = await prisma.user.upsert({
-    where: { email: 'samoluabereola@gmail.com' },
+    where: { email: ADMIN_EMAIL },
     update: {},
     create: {
       firstName: 'Sam',
@@ -32,7 +39,8 @@ async function main() {
       id: 'seed-service-1',
       title: 'Personal Wellness Consultation',
       description: 'A 60-minute one-on-one session focused on your personal wellness journey.',
-      price: 15000,
+      category: 'Personal Wellness',
+      priceMinor: GBP(150),
       duration: 60,
     },
   });
@@ -60,7 +68,7 @@ async function main() {
       category: 'LEADERS',
       description:
         'Transform your mental wellness with this structured 30-day program. Through guided sessions and reflective practice, you build habits that support presence and resilience.',
-      price: 25000,
+      priceMinor: GBP(250),
       durationWeeks: 4,
       hoursPerWeek: 2,
       certificateLabel: 'Digital certificate',
@@ -95,8 +103,8 @@ async function main() {
 
   console.log('✅ Sample data seeded.');
   console.log('\n🔑 Admin credentials:');
-  console.log('   Email:    admin@wellbeing.com');
-  console.log('   Password: Admin@1234');
+  console.log(`   Email:    ${ADMIN_EMAIL}`);
+  console.log(`   Password: ${ADMIN_PASSWORD}`);
 }
 
 main()

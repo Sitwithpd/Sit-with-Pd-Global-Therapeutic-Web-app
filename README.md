@@ -240,6 +240,54 @@ characters cannot push an otherwise-valid bio over the limit. Omit the field on
 Consumers must render it with preserved whitespace (`white-space: pre-wrap`, or
 split on `\n\n` into paragraphs) — the newlines are the formatting.
 
+### Memberships — `/api/memberships`
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/plans` | Public | Active plans, localized. Both cadences are priced so the monthly/annual toggle needs no round trip |
+| GET | `/plans/:id` | Public | Single active plan |
+| GET | `/me` | User | The member's single live subscription, or `null` |
+| GET | `/me/payments` | User | Membership billing history |
+| POST | `/subscribe` | User | Start checkout for a plan. Also the **upgrade** path |
+| POST | `/me/change` | User | Schedule a **downgrade**; refuses upgrades with 409 and points at `/subscribe` |
+| DELETE | `/me/change` | User | Drop a scheduled downgrade |
+| POST | `/me/cancel` | User | Switch off auto-renew |
+| POST | `/me/resume` | User | Undo a cancellation before it lands |
+| GET | `/admin/plans` | Admin | Plans with subscriber counts, priced in the base currency |
+| POST\|PATCH\|DELETE | `/admin/plans[/:id]` | Admin | Plan CRUD |
+| GET | `/admin/subscribers` | Admin | Paginated; optional `?status=` and `?planId=` |
+| GET | `/admin/stats` | Admin | Active/cancelling/past-due counts and MRR |
+
+#### Why there is a provider-plan matrix
+
+A Flutterwave payment plan fixes **both amount and currency**, while our prices
+are GBP-base and localized per request. `MembershipProviderPlan` makes that
+mismatch explicit: one of our plans maps to many of theirs, keyed by
+`(interval, currency, amountMinor)` and created lazily on first use.
+
+Including the amount in the key is deliberate — repricing mints a *new*
+provider plan, so existing members keep billing at the price they agreed to
+until they change tier.
+
+#### Lifecycle
+
+| Action | Effect |
+|---|---|
+| Subscribe | `PENDING_PAYMENT` → `ACTIVE` on the first `charge.completed` |
+| Renewal | Flutterwave debits on schedule; the period extends from the **existing period end**, so a late webhook never shortens a paid period |
+| Upgrade | Charged immediately via `/subscribe`; the old subscription is superseded once the new one is paid |
+| Downgrade | Scheduled on the subscription and applied at the next renewal — no proration, no refund, no lost time |
+| Cancel | `cancelAtPeriodEnd`, status `CANCELLED`. **Access is never revoked early**; the row expires when the period elapses |
+| Missed renewal | `ACTIVE` → `PAST_DUE` (benefits continue during a 3-day grace window while Flutterwave retries) → `EXPIRED` |
+
+A member holds **one** subscription at a time. Abandoned checkouts are expired
+after an hour by `POST /api/internal/cron/subscription-expiry` (Bearer
+`CRON_SECRET`, also run on an interval from `server.ts`) so they cannot block
+the slot.
+
+**Plans with subscribers cannot be deleted** — subscription rows reference the
+plan and are the billing record. Deactivating removes it from the pricing page
+while existing members keep billing.
+
 ### Payments — `/api/payments`
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
